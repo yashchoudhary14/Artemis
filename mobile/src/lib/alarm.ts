@@ -1,5 +1,5 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from "expo-audio";
-import { Vibration } from "react-native";
+import { NativeModules, Vibration } from "react-native";
 import { createStore } from "./store";
 
 // Loud SOS alarm: a generated two-tone siren on loop at full player volume + continuous vibration.
@@ -17,6 +17,9 @@ type VolumeApi = {
 };
 
 function volumeManager(): VolumeApi | null {
+  // Only touch the library when its native part is in this build; otherwise its own
+  // async setup throws "doesn't seem to be linked" errors.
+  if (!NativeModules.VolumeManager) return null;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require("react-native-volume-manager") as { VolumeManager?: VolumeApi };
