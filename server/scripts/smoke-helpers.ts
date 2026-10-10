@@ -2,9 +2,9 @@ import { DatabaseSync } from "node:sqlite";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const BASE = process.env.SMOKE_BASE_URL ?? "http://localhost:3000";
+export const BASE = process.env.SMOKE_BASE_URL ?? "http://localhost:3000";
 const dbFile = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "data", "safewalk.db");
-const db = new DatabaseSync(dbFile);
+export const db = new DatabaseSync(dbFile);
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 

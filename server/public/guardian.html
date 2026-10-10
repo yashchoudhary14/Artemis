@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#f6eefa" />
+    <title>SafeWalk live link</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="/guardian.css" />
+  </head>
+  <body>
+    <main id="app" aria-live="polite">
+      <header class="top">
+        <div class="brand">☾ SafeWalk</div>
+        <div class="live" id="live"><span class="dot"></span> Live</div>
+      </header>
+
+      <section id="loading" class="card center">Loading…</section>
+
+      <section id="invalid" class="card center hidden">
+        <h1>This link is not valid</h1>
+        <p class="muted">Ask the person who shared it to send the latest SafeWalk link.</p>
+      </section>
+
+      <div id="content" class="hidden">
+        <section class="hero">
+          <p class="eyebrow" id="kind"></p>
+          <h1 id="name"></h1>
+          <div id="status" class="pill"></div>
+          <p class="headline" id="headline"></p>
+        </section>
+
+        <section class="card ack" id="ackCard">
+          <div id="ackForm">
+            <p class="ack-title">Are you responding?</p>
+            <p class="muted small">Pressing this tells everyone else in her circle that you are on it and stops further reminders.</p>
+            <label class="small" for="ackName">Your name</label>
+            <input id="ackName" autocomplete="name" placeholder="e.g. Mum" maxlength="60" />
+            <button id="ackBtn" class="btn primary big">I'm on it</button>
+          </div>
+          <div id="ackDone" class="hidden">
+            <p class="ack-title">✓ <span id="ackWho"></span></p>
+            <p class="muted small">Everyone in her circle has been told.</p>
+          </div>
+        </section>
+
+        <section class="card map-card">
+          <div id="zone" class="zone hidden">She is at one of her private places. Location sharing is paused there.</div>
+          <div id="map" role="img" aria-label="Map of her last known location"></div>
+          <div class="facts">
+            <div><span class="label">Last update</span><span id="updated">—</span></div>
+            <div><span class="label">Battery</span><span id="battery">—</span></div>
+            <div><span class="label">Going to</span><span id="dest">—</span></div>
+          </div>
+          <div class="row">
+            <a id="gmaps" class="btn" target="_blank" rel="noopener">Open in Google Maps</a>
+            <a class="btn danger" href="tel:112">Call 112</a>
+          </div>
+        </section>
+
+        <section class="card hidden" id="buddyCard">
+          <h2>Walking with a buddy</h2>
+          <div class="buddy">
+            <img id="buddyPhoto" alt="" />
+            <div><strong id="buddyName"></strong><div class="muted small">Verified institute email</div></div>
+          </div>
+        </section>
+
+        <section class="card hidden" id="aiCard">
+          <h2>AI summary</h2>
+          <p class="ai-label">AI summary — may contain errors. Always check the original audio below.</p>
+          <div id="aiList"></div>
+        </section>
+
+        <section class="card hidden" id="audioCard">
+          <h2>Audio from her phone</h2>
+          <p class="muted small">Recorded in 10-second clips after the alert. Transcripts are automatic and may be wrong.</p>
+          <div id="audioList"></div>
+        </section>
+
+        <section class="card hidden" id="medCard">
+          <h2>Medical card</h2>
+          <dl id="medList"></dl>
+        </section>
+
+        <section class="card">
+          <h2>What has happened</h2>
+          <ol id="timeline" class="timeline"></ol>
+        </section>
+
+        <details class="card agent-log">
+          <summary>Assistant activity (for responders)</summary>
+          <ol id="agentLog" class="timeline small"></ol>
+        </details>
+
+        <p class="foot muted small">Updates every 3 seconds. Phone numbers shown here come only from official helplines or Google Maps.</p>
+      </div>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/guardian.js"></script>
+  </body>
+</html>

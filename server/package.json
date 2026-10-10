@@ -11,6 +11,8 @@
     "start": "tsx --env-file-if-exists=.env src/index.ts",
     "typecheck": "tsc --noEmit",
     "smoke": "tsx scripts/smoke-phase1.ts",
+    "smoke:all": "tsx scripts/smoke-phase234.ts",
+    "agent:ping": "tsx --env-file-if-exists=.env scripts/agent-ping.ts",
     "tunnel": "cloudflared tunnel --url http://localhost:3000"
   },
   "dependencies": {

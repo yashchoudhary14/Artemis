@@ -36,8 +36,9 @@ async function handleUpdate(u: Update) {
 }
 
 export async function startTelegramPolling(): Promise<void> {
-  if (!config.telegramBotToken) {
-    log.warn("TELEGRAM_BOT_TOKEN not set: contact linking is disabled");
+  if (!config.telegramBotToken || config.notifyProvider !== "telegram") {
+    // Console mode never touches the bot, so a test server can't steal updates from the demo server.
+    log.warn("Telegram off (NOTIFY_PROVIDER is not telegram or no token): contact linking is disabled");
     return;
   }
   const api = `https://api.telegram.org/bot${config.telegramBotToken}`;

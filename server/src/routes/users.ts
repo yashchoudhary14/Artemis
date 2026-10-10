@@ -17,6 +17,12 @@ const contactBody = z.object({
   name: z.string().trim().min(1).max(60),
   tier: z.enum(["inner", "wider"]).default("inner"),
 });
+// Medical card, shown on the guardian page. Empty string clears a field.
+const medicalBody = z.object({
+  bloodGroup: z.string().trim().max(10).optional(),
+  allergies: z.string().trim().max(300).optional(),
+  conditions: z.string().trim().max(300).optional(),
+});
 
 export async function userRoutes(app: FastifyInstance) {
   app.post("/users", async (req) => {
@@ -27,6 +33,13 @@ export async function userRoutes(app: FastifyInstance) {
       name: body.name,
       escalation_wait_seconds: body.escalationWaitSeconds ?? config.escalationWaitSeconds,
       created_at: Date.now(),
+      blood_group: null,
+      allergies: null,
+      conditions: null,
+      email: null,
+      email_verified: 0,
+      photo_file: null,
+      photo_token: null,
     };
     run(
       "INSERT INTO users (id, token, name, escalation_wait_seconds, created_at) VALUES (?, ?, ?, ?, ?)",
@@ -48,6 +61,18 @@ export async function userRoutes(app: FastifyInstance) {
     if (body.escalationWaitSeconds) {
       run("UPDATE users SET escalation_wait_seconds = ? WHERE id = ?", body.escalationWaitSeconds, user.id);
     }
+    return meJson(getOne<UserRow>("SELECT * FROM users WHERE id = ?", user.id)!);
+  });
+
+  app.put("/me/medical", async (req, reply) => {
+    const user = authUser(req, reply);
+    if (!user) return;
+    const body = medicalBody.parse(req.body ?? {});
+    const val = (v: string | undefined, old: string | null) => (v === undefined ? old : v || null);
+    run(
+      "UPDATE users SET blood_group = ?, allergies = ?, conditions = ? WHERE id = ?",
+      val(body.bloodGroup, user.blood_group), val(body.allergies, user.allergies), val(body.conditions, user.conditions), user.id,
+    );
     return meJson(getOne<UserRow>("SELECT * FROM users WHERE id = ?", user.id)!);
   });
 

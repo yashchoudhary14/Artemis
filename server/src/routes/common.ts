@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import type { FastifyReply, FastifyRequest } from "fastify";
+import { config } from "../config.js";
 import { getAll, getOne, type ContactRow, type UserRow } from "../db.js";
 import { telegramLinkUrl } from "../telegramLink.js";
 
@@ -31,6 +32,14 @@ export function contactJson(c: ContactRow) {
   };
 }
 
+export function medicalJson(user: UserRow) {
+  return { bloodGroup: user.blood_group, allergies: user.allergies, conditions: user.conditions };
+}
+
+export function photoUrl(user: Pick<UserRow, "photo_token" | "photo_file">): string | null {
+  return user.photo_token && user.photo_file ? `${config.publicBaseUrl}/photos/${user.photo_token}` : null;
+}
+
 export function meJson(user: UserRow) {
   const contacts = getAll<ContactRow>("SELECT * FROM contacts WHERE user_id = ? ORDER BY position", user.id);
   return {
@@ -38,5 +47,9 @@ export function meJson(user: UserRow) {
     name: user.name,
     escalationWaitSeconds: user.escalation_wait_seconds,
     contacts: contacts.map(contactJson),
+    medical: medicalJson(user),
+    email: user.email,
+    emailVerified: Boolean(user.email_verified),
+    photoUrl: photoUrl(user),
   };
 }
