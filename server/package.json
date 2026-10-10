@@ -12,6 +12,8 @@
     "typecheck": "tsc --noEmit",
     "smoke": "tsx scripts/smoke-phase1.ts",
     "smoke:all": "tsx scripts/smoke-phase234.ts",
+    "smoke:ci": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-all-smoke.ps1",
+    "demo": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/demo.ps1",
     "agent:ping": "tsx --env-file-if-exists=.env scripts/agent-ping.ts",
     "tunnel": "cloudflared tunnel --url http://localhost:3000"
   },

@@ -2,63 +2,64 @@
 
 Read this before continuing work on any laptop. Update it at the end of every task, then commit and push.
 
-**Repo:** https://github.com/chhavimittal7489-svg/cline
+**Repo:** https://github.com/yashchoudhary14/safewalk (private). The original team repo `chhavimittal7489-svg/cline` is kept as the git remote `team` in this copy; nothing is pushed there.
 
 ## Current status
 _What works right now, and how it was tested._
 
-- **Phase 0 done (except installing the APK on phones).**
-- Server (`server/`, Fastify 5 + tsx, Node 22+): `GET /health` returns `{ok:true}`. Tested locally with `Invoke-RestMethod http://localhost:3000/health` **and** through a cloudflared quick tunnel (`https://<random>.trycloudflare.com/health`) from this laptop. `npm run typecheck` is clean.
-- Mobile (`mobile/`, Expo SDK 57, RN 0.86, Expo Router with routes in `mobile/src/app/`): every native module needed for all phases is in the first build: dev-client, location + task-manager (background location + foreground service), expo-audio (background recording), expo-speech-recognition, battery, secure-store, async-storage, react-native-maps (Google), slider, image-picker, file-system. `npx tsc --noEmit` clean, `npx expo-doctor` 21/21.
-- EAS project: `@astra-yages/mobile` (id `5c776287-b32b-4b81-9421-02967a77935a`). Android package `com.safewalk.app`. EAS env var `GOOGLE_MAPS_API_KEY` set (development + preview, sensitive).
-- **Dev build #2 FINISHED.** APK: https://expo.dev/artifacts/eas/kf7f558I2teZ6wesg_W6sIlb1z9UU6nZBNpa6DjUPVU.apk (build page: https://expo.dev/accounts/astra-yages/projects/mobile/builds/5045df25-222e-42a7-912d-461c25b335ff). **Not yet installed on any phone.**
-- **Phase 1 SERVER done.** Tested with `npm run smoke` (20/20 PASS, console notifier, `HEARTBEAT_TIMEOUT_SECONDS=10`), and the alert texts were read in the server log:
-  - SQLite via `node:sqlite` at `server/data/safewalk.db`. Tables: users, contacts, sessions, locations, alerts, acks (acks is empty until Phase 2).
-  - API (all except `POST /users` need `Authorization: Bearer <token>`):
-    - `POST /users {name, escalationWaitSeconds?}` → `{token, id, name, escalationWaitSeconds, contacts}`
-    - `GET /me`, `PATCH /me {name?, escalationWaitSeconds? (60–900)}`
-    - `POST /contacts {name, tier: inner|wider}` → `{id, linkCode, linkUrl (t.me/<bot>?start=CODE), linked}`, `DELETE /contacts/:id`
-    - `POST /sessions {destination?, timerMinutes?, battery?, inSafeZone}` → `{sessionId, timerEndsAt, guardianUrl}`
-    - `POST /sessions/:id/heartbeat {lat?, lng?, accuracy?, battery?, inSafeZone}`. No location is stored while `inSafeZone`.
-    - `POST /sessions/:id/end {reason: cancel|duress}` always returns `{ok:true}` (duress is indistinguishable). The phone checks the PIN locally.
-  - Watchdog every 5 s: fires a timer-expiry alert once, and fires the dead man's switch once after 45 s with no heartbeat (skipped inside a safe zone). The next heartbeat sends "sending updates again".
-  - Duress: alerts instantly, and the session stays watched (status `duress`). A later normal cancel cannot end it.
-  - Alerts are fixed templates in `server/src/alerts.ts` (no AI). The inner circle gets the live link; the wider circle gets the location only. Times are in IST.
-  - `notify` interface: `server/src/notify/` (telegram + console). Never throws; failures are logged with the full text.
-  - Telegram linking: `server/src/telegramLink.ts` long-polls `getUpdates` and saves `chat_id` on `/start CODE`. **Not yet tested with the real bot** (needs `server/.env`).
-- `data/helplines.json` created from the team's verified table (8 entries, all with source URLs; 1091 excluded).
-- Telegram bot, Groq, Expo and Google Maps accounts are set up (key values are in the team's private chat, not in the repo).
+- **All phases (0–4) are built.** Server is tested end to end; the phone app typechecks and bundles but has **not yet been run on a phone**.
+- **Server** (`server/`, Fastify 5 + tsx, Node 22+, SQLite via `node:sqlite`):
+  - Phase 1: walks, timer expiry, duress PIN, 45 s dead man's switch, fixed-template alerts, Telegram/console notifier, Telegram contact linking.
+  - Phase 2: **Cline SDK escalation agent** (`server/agent/`): ladder contact 1 → wait → contact 2 → … → "call 112", driven by the watchdog; agent drafts messages, can only raise the level, template fallback on error/timeout; stops on "I'm on it" or real-PIN end. Guardian page `/g/:token` (Leaflet map + trail, I'm on it, audio + transcripts, AI summary labelled, medical card, timeline, agent log).
+  - Phase 3: keyword endpoint (instant template alert + AI follow-up with nearest police), SOS `/panic`, 10 s audio chunk upload (idempotent by seq), Groq `whisper-large-v3-turbo` transcription, AI summaries of transcripts, battery ≤ 10 % alert.
+  - Phase 4: `/helplines` (from `data/helplines.json`, sourced entries only), `/nearby` (Google Places API (New), sorted by distance, "Source: Google Maps"), medical card, `/medical` fast-dial notify (108 in Assam, else 112), walking buddy (institute email code in server log, photo, campus areas, ±15 min match, both-accept announcement to families).
+  - **Tested:** `npm run typecheck` clean; `npm run smoke` 20/20; `npm run smoke:all` 39/39 (real Cline agent with Haiku, real Groq, real Google Places, console notifier). Guardian page checked in a browser at phone size.
+- **Mobile** (`mobile/`, Expo SDK 57, RN 0.86, Expo Router, routes in `mobile/src/app/`): tabs Home / Walk / SOS / Help / Rise in the Artemis layout with the pink/lilac palette; Rise = settings (server URL, account, PIN + duress PIN in SecureStore, contacts + Telegram link share, escalation slider, medical card); Walk (timer, PIN pad, duress shows the same "Walk cancelled"); background heartbeat via expo-location task + foreground service (`lib/tracking.ts`); Private zones map (on-device only, `lib/zones.ts`); "I feel uneasy" (expo-speech-recognition, hi-IN/en-IN, 30 min auto-off, paused in zones); SOS (hold 1 s, 10 s audio chunks via expo-audio, offline queue, "Stay with me" timeline); Help (medical fast-dial, address in large text, nearby, helplines); Walk together (buddy).
+  - **Tested:** `npx tsc --noEmit` clean; `npx expo export --platform android` bundles (3.1 MB). **Not run on a device yet.**
+- No new native modules were added, so **dev build #2 APK** (link below) should run this code as-is.
+- EAS project: `@astra-yages/mobile` (id `5c776287-b32b-4b81-9421-02967a77935a`). Android package `com.safewalk.app`. Dev build #2 APK: https://expo.dev/artifacts/eas/kf7f558I2teZ6wesg_W6sIlb1z9UU6nZBNpa6DjUPVU.apk
 
 ## In progress
-_Exactly where the last session stopped (file, function, half-done step)._
+_Exactly where the last session stopped._
 
-- Phase 1 mobile has not started. UI direction is decided (see Decisions): Artemis layout with the light pink/lilac palette.
-- APK is built but not yet installed on phones.
+- On-device testing of the app has not started. Expect small fixes (permissions flow, background behaviour, layout on small screens).
 
 ## Next steps
 _In order._
 
-1. Install the APK (link above) on every demo phone, open SafeWalk, and confirm the dev-client launcher appears.
-2. Fill `server/.env` (needs `TELEGRAM_BOT_TOKEN` and `TELEGRAM_BOT_USERNAME`). Test Telegram linking: create a contact, open its `linkUrl` on a phone, press Start, and check `GET /me` shows `linked: true`.
-3. Phase 1 mobile: home, walk/timer, settings (server URL, name, PIN, duress PIN, contacts with Telegram link share, escalation-wait slider 1–15 min). Then `api.ts`, a 15 s heartbeat with location and battery, and PINs in SecureStore. Duress must show the same "Walk cancelled" screen.
-4. 5-minute speech-recognition spike on each phone (hi-IN / en-IN).
-5. Phase 2: guardian page (`/g/:token`; the route doesn't exist yet, so links currently 404), Cline SDK escalation agent, safe zones.
+1. Install the APK on every demo phone; run the server + tunnel (README steps 4–5); `npx expo start --dev-client` in `mobile/`.
+2. On each phone do README "First run on each phone" (server URL, name, PINs, contacts with Telegram Start, permissions "All the time").
+3. Walk through the demo script on real phones and note anything broken:
+   1. Walk from Hostel with a 2-min timer; leave a private zone → locations resume (check guardian page).
+   2. Timer runs out → Telegram alert → guardian link shows live map.
+   3. Duress PIN → "Walk cancelled" → alert actually goes out.
+   4. Uneasy mode: say "bachao" → instant alert → recording → AI follow-up with nearest police.
+   5. Airplane mode mid-walk → ~45 s later "lost contact".
+   6. Escalation: set wait to 1 min in Rise; contact 1 ignores → contact 2 gets the agent's message → contact 2 presses "I'm on it".
+   7. Help → medical fast-dial → dialler with 108, address in large text, family notified.
+   8. Two phones: buddy match for the same route (email code is in the server log).
+4. Set `AGENT_MODEL=anthropic/claude-opus-5.5` on the demo server (Haiku for testing).
+5. Optional: build a `preview` APK (JS bundled) ≥ 90 min before the demo so phones don't depend on the laptop bundler.
+6. Rehearse the demo.
 
-## Decisions (from the kickoff plan)
+## Decisions
 
-- Notifier: **Telegram** (Twilio trial can't send custom message bodies). Console notifier for testing.
-- Speech-to-text for panic chunks: **Groq** `whisper-large-v3-turbo`; backup Deepgram.
-- Agent: Cline SDK `@cline/sdk` 0.0.92, provider `anthropic`. Testing `claude-haiku-5-5`, demo `claude-opus-5-5`.
-- Escalation wait: default **300 s**, user can change it in app Settings. For demo step 6, set it to 1 min from Settings.
-- Maps: native `react-native-maps` (Google) for smooth safe-zone drawing.
-- Demo location: Guwahati, Assam. Medical fast-dial: 108 in Assam, 112 elsewhere.
-- UI: **hybrid**. Take the layout and screens from `UI_reference/general app UI/design 2` (Artemis: Home with "Start a walk" / "I feel uneasy" / circle avatars / centre SOS tab, Private zones with radius slider, "Stay with me" with alert timeline), and use the **light pink/lilac palette** from `design 1` (soft gradients, serif headlines, white frosted cards, dark pill buttons). Maps follow the Life360 references (`maps reference/`); the buddy screen follows the radar reference (`find a buddy/`). The `.mp4` files couldn't be viewed by the agent.
-  - **Primary mock:** `design 2/WhatsApp Image 2026-10-10 at 2.45.09 PM.jpeg` is exactly this hybrid (Home: "Your circle", "A little company?" buddy card, "I feel uneasy", "Private zones", "Help, when you need it"; Private zones: map circle + "Your space stays yours" sheet with radius slider; Walk together: buddy radar + departures list). Tabs: Home / Walk / SOS (centre, coral) / Help / Rise. Build to this.
-  - `2.45.53 PM.jpeg` (pink login/register/profile) is only a style hint. Phase 1 has no login screen: the user enters a name in Settings and gets a server token.
+- Notifier: **Telegram** (Twilio trial can't send custom message bodies). Console notifier for testing; console mode never polls Telegram.
+- Speech-to-text for panic chunks: **Groq** `whisper-large-v3-turbo` (`server/src/stt/`); backup Deepgram.
+- Agent: Cline SDK `@cline/sdk` 0.0.92 `Agent` with our own tools only (no file/shell tools), provider `cline` (Cline credits via `CLINE_API_KEY`). Model ids need a dot: `anthropic/claude-haiku-5.5` (testing), `anthropic/claude-opus-5.5` (demo).
+- Escalation: plain-code ladder in the watchdog; agent can raise level (3 = everyone call 112 now). Duress / keyword / SOS start at level 2. Keyword/SOS send an AI follow-up to all inner contacts first; contact 1's personal ask comes one wait later.
+- An alerted session can only be ended with the real PIN (starting a new walk does not end it).
+- Medical fast-dial creates a `medical` session (no dead man's switch) so the family gets a live link.
+- Escalation wait: default **300 s**, user can change it in Rise (1–15 min). For demo step 6, set it to 1 min.
+- Maps: native `react-native-maps` (Google) for safe zones; Leaflet + OSM on the guardian page.
+- Demo location: Guwahati, Assam (IIT Guwahati). Medical fast-dial: 108 in Assam, 112 elsewhere.
+- Keyword listening defaults to **hi-IN** (hears "बचाओ" and "हेल्प"); en-IN selectable. Words: help, bachao (+ spellings) + one custom word.
+- UI: Artemis layout (`design 2/…2.45.09 PM.jpeg`) + pink/lilac palette (`design 1`). No icon library is installed, so tab icons are text glyphs; gradients use RN 0.86 `experimental_backgroundImage`.
+- Buddy campus areas are a fixed list in `server/src/buddy/areas.ts` (edit for the real campus).
 
 ## How to run
 
-- See `README.md` (fresh-laptop setup, server, tunnel, phone).
+- See `README.md` (fresh-laptop setup, server, tunnel, phone, tests). API: `docs/API.md`.
 
 ## Environment variables needed
 _Name, what it is, where to get it. Real values are never written here or committed._
@@ -67,31 +68,33 @@ _Name, what it is, where to get it. Real values are never written here or commit
 |---|---|---|---|
 | `PORT` | Server port (default 3000) | — | Default |
 | `PUBLIC_BASE_URL` | Tunnel URL used in guardian links | Output of `npm run tunnel` (changes each restart) | Per session |
-| `ANTHROPIC_API_KEY` | Agent LLM key | Team private chat | Needed for Phase 2 |
-| `AGENT_PROVIDER` | Cline SDK provider id (`anthropic`) | — | Default |
-| `AGENT_MODEL` | `claude-haiku-5-5` for testing, `claude-opus-5-5` for demo | Set by team | Default |
+| `CLINE_API_KEY` | Agent LLM access, billed to Cline credits | app.cline.bot → Settings → API Keys | Yes |
+| `AGENT_PROVIDER` | Cline SDK provider id (`cline`) | — | Default |
+| `AGENT_MODEL` | `anthropic/claude-haiku-5.5` testing, `anthropic/claude-opus-5.5` demo (dot, not hyphen) | Set by team | Yes |
+| `AGENT_TIMEOUT_SECONDS` | Max seconds per agent step before template fallback (25) | — | Default |
 | `NOTIFY_PROVIDER` | `telegram` or `console` | — | Default |
-| `TELEGRAM_BOT_TOKEN` | Sends alert messages to contacts (main demo channel) | Team private chat (created via @BotFather) | Yes |
-| `TELEGRAM_BOT_USERNAME` | Bot username without @, used for contact link | @BotFather | Needed for Phase 1 |
+| `TELEGRAM_BOT_TOKEN` | Sends alert messages to contacts (main demo channel) | Team private chat (@BotFather) | Yes |
+| `TELEGRAM_BOT_USERNAME` | Bot username without @, used for contact link | @BotFather | Yes |
 | `GROQ_API_KEY` | Speech-to-text (Whisper) for panic-mode audio chunks | Team private chat (console.groq.com) | Yes |
-| `GOOGLE_MAPS_API_KEY` | Places API (server) + Maps SDK for Android (EAS env var) | Team private chat (Google Cloud console) | Yes (also set on EAS) |
+| `GOOGLE_MAPS_API_KEY` | Places API (New) (server) + Maps SDK for Android (EAS env var) | Team private chat (Google Cloud console) | Yes |
 | `HEARTBEAT_TIMEOUT_SECONDS` | Dead man's switch timeout (45) | — | Default |
 | `ESCALATION_WAIT_SECONDS` | Default escalation wait (300) | — | Default |
-| `INSTITUTE_EMAIL_DOMAIN` | Allowed domain for buddy sign-up | Team decides | Needed for Phase 4 |
+| `INSTITUTE_EMAIL_DOMAIN` | Allowed domain for buddy sign-up (`iitg.ac.in`) | Team decides | Yes |
 
 ## Accounts and keys status
 | Service | Status |
 |---|---|
-| GitHub repo | Created |
+| GitHub repo | `yashchoudhary14/safewalk` (private) |
 | Telegram bot | Created |
-| Groq (speech-to-text) | Key obtained |
+| Cline API key | Working (checked with `npm run agent:ping`) |
+| Groq (speech-to-text) | Working (smoke test transcribes) |
 | Expo account (dev build) | Created |
-| Google Places / Maps | Created |
-| Twilio (optional) | Not yet |
+| Google Places / Maps | Places API (New) working; legacy Places API is not enabled (not needed) |
+| Twilio (optional) | Not used |
 
 ## Helplines (verified by team on 10 Oct 2026)
 
-Use these to build `data/helplines.json`. Fields: number, purpose, coverage, source URL, date verified (2026-10-10).
+Used to build `data/helplines.json`. Fields: number, purpose, coverage, source URL, date verified (2026-10-10).
 
 | Number | Purpose (shown to user) | Coverage | Source |
 |---|---|---|---|
@@ -104,22 +107,20 @@ Use these to build `data/helplines.json`. Fields: number, purpose, coverage, sou
 | 108 | Ambulance (Mrityunjoy 108) | Assam | https://nhm.assam.gov.in/schemes/mrityunjoy-%E2%80%93-108 |
 | 181 | Sakhi women helpline | Assam | https://assam.mygov.in/en/talk/181-sakhi-women-helpline-number-launched/ |
 
-- Extra reference page for Assam district helplines (no numbers taken from it yet): https://kamrup.assam.gov.in/all-helplines-numbers
-- **1091 (women helpline) has no source yet.** Leave it out of the JSON until the team adds an official source.
-- Medical fast-dial in Assam should dial **108**. Outside states covered in the file, fall back to **112**.
+- **1091 (women helpline) has no source yet.** Left out of the JSON until the team adds an official source.
 
 ## Known issues and workarounds
 
-- **npm 11 blocks install scripts.** After `npm ci` in `server/`, run `node node_modules\cloudflared\lib\cloudflared.js bin install` once to get the tunnel binary (see README).
-- **EAS uses npm 10 with `npm ci`.** Peer conflicts that npm 11 tolerates locally can fail there. Before a new build, check with `npx npm@10 install --package-lock-only --include=dev` in `mobile/`.
-- **Only one server may poll the Telegram bot at a time** (409 Conflict). A second laptop should use `NOTIFY_PROVIDER=console` with an empty token.
-- **Guardian links (`/g/...`) 404 until Phase 2** builds the page.
+- **App not yet tested on a phone.** Risky areas: background location permission flow on Android 14 ("Allow all the time" is a separate settings screen), speech recognition with the screen off (may stop in the background — keep the screen on for the demo), background audio recording, `experimental_backgroundImage` gradients (fall back to flat colours if unsupported).
+- **npm 11 blocks install scripts.** After `npm ci` in `server/`, run `node node_modules\cloudflared\lib\cloudflared.js bin install` once (see README).
+- **EAS uses npm 10 with `npm ci`.** Before a new build, check with `npx npm@10 install --package-lock-only --include=dev` in `mobile/`.
+- **Only one server may poll the Telegram bot at a time** (409 Conflict). Test servers should use `NOTIFY_PROVIDER=console`.
+- **Cline SDK types resolve to `any`** under NodeNext; `server/agent/tools.ts` keeps a local `AgentTool` shape. Runtime works.
 - **Google Maps key is unrestricted** (hackathon shortcut). Restrict it to the package + SHA-1 after the demo.
-- **Telegram limit:** a bot can only message people who have opened the bot and pressed Start once. Every emergency contact must do this during setup; the server must save their chat ID then. Build this into the "add contact" flow and test it with every team phone before the demo.
+- **Telegram limit:** a bot can only message people who pressed Start once. The app's "Add and share Telegram link" flow handles this; test it with every team phone before the demo.
+- **Buddy email codes** are printed in the server log (allowed shortcut), not emailed.
 
 ## Last commit
 
-- Hash: `826021d` (plus a HANDOFF-only commit on top; run `git log -1` for the exact latest)
-- Message: Phase 1 server: walk sessions, timer expiry + duress + 45s dead man's switch send fixed-template alerts (smoke test 20/20 pass); notify interface (telegram/console); Telegram contact linking
-- Pushed by / from which laptop: Yash's laptop (Windows)
-- Credits key in use: not recorded
+- See `git log -1` (pushed to `origin` = `yashchoudhary14/safewalk`).
+- Pushed from: Yash's laptop (Windows), folder `C:\dev\Cline hackathon - copy`.
