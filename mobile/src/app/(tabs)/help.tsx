@@ -1,11 +1,11 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from "react-native";
-import { Banner, Brand, Card, Chip, Hero, Muted, PillButton, Row, Screen, SectionTitle } from "@/components/ui";
+import { Banner, Brand, Button, Card, FadeIn, Hero, Icon, IconCircle, Muted, Pressy, Row, Screen, SectionHeader, Segmented } from "@/components/ui";
 import { api, type Place } from "@/lib/api";
 import { addressFor, currentPosition, stateFor } from "@/lib/geo";
 import { cachedHelplines, dial, fetchHelplines, medicalFastDial, type HelplineCache } from "@/lib/medical";
-import { colors, space, type } from "@/theme";
+import { colors, fonts, radius, shadows, space, type } from "@/theme";
 
 function km(m: number) {
   return m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1)} km`;
@@ -17,6 +17,16 @@ function host(url: string) {
   } catch {
     return url;
   }
+}
+
+function CallButton({ onPress, label }: { onPress: () => void; label: string }) {
+  return (
+    <Pressy onPress={onPress} accessibilityLabel={label} scaleTo={0.9}>
+      <View style={styles.callBtn}>
+        <Icon name="call" size={18} color={colors.white} />
+      </View>
+    </Pressy>
+  );
 }
 
 export default function Help() {
@@ -72,92 +82,144 @@ export default function Help() {
     setPlaceType("hospital");
     setMedicalMsg("Telling your circle…");
     const { notify } = await medicalFastDial();
-    notify.then(() => setMedicalMsg("Your circle has your location.")).catch(() => setMedicalMsg("Couldn't reach the server — your circle wasn't told. Call them if you can."));
+    notify
+      .then(() => setMedicalMsg("Your circle has your location."))
+      .catch(() => setMedicalMsg("Couldn't reach the server — your circle wasn't told. Call them if you can."));
   };
 
   const ambulance = lines?.ambulanceNumber ?? "112";
 
   return (
     <Screen>
-      <Brand />
-      <Hero title={"Help, when\nyou need it."} subtitle={lines?.state ? `Numbers for ${lines.state} and all of India.` : "Verified numbers and help near you."} />
+      <FadeIn>
+        <Brand />
+        <Hero title={"Help, when\n"} accent="you need it." subtitle={lines?.state ? `Verified numbers for ${lines.state} and all of India.` : "Verified numbers and help near you."} />
+      </FadeIn>
 
-      <Card tint="coral">
-        <Text style={styles.medTitle}>Medical emergency</Text>
-        <Text style={styles.medBody}>One tap calls {ambulance} and sends your location to your circle at the same time.</Text>
-        <PillButton label={`Call ambulance · ${ambulance}`} variant="soft" big onPress={fastDial} style={{ marginTop: space.md }} />
-      </Card>
+      <FadeIn index={1}>
+        <Card tone="sos" style={{ padding: space.xl }}>
+          <Row style={{ gap: space.md, alignItems: "flex-start" }}>
+            <IconCircle icon="medkit" tint="rgba(255,255,255,0.22)" color={colors.white} size={50} />
+            <View style={{ flex: 1 }}>
+              <Text style={[type.title, { color: colors.white, fontSize: 24 }]}>Medical emergency</Text>
+              <Text style={[type.body, { color: "rgba(255,255,255,0.88)", marginTop: 4 }]}>
+                One tap calls {ambulance} and sends your location to your circle at the same moment.
+              </Text>
+            </View>
+          </Row>
+          <Button label={`Call ambulance · ${ambulance}`} icon="call" variant="light" size="lg" onPress={fastDial} style={{ marginTop: space.lg }} />
+        </Card>
+      </FadeIn>
 
       {medicalMode ? (
-        <Card>
-          <Text style={type.label}>Read this to the operator</Text>
-          <Text style={styles.address}>{address ?? (pos ? `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}` : "Finding your location…")}</Text>
-          {pos && address ? <Muted>GPS: {pos.lat.toFixed(5)}, {pos.lng.toFixed(5)}</Muted> : null}
-          {medicalMsg ? <Banner text={medicalMsg} tone={medicalMsg.startsWith("Couldn't") ? "amber" : "green"} /> : null}
-          <PillButton label="Medical card" variant="ghost" onPress={() => router.push("/rise")} />
-        </Card>
+        <FadeIn>
+          <Card>
+            <Row style={{ gap: 8, marginBottom: space.xs }}>
+              <Icon name="mic-outline" size={16} color={colors.violet} />
+              <Text style={[type.label, { color: colors.violet }]}>Read this to the operator</Text>
+            </Row>
+            <Text style={styles.address}>{address ?? (pos ? `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}` : "Finding your location…")}</Text>
+            {pos && address ? <Muted>GPS {pos.lat.toFixed(5)}, {pos.lng.toFixed(5)}</Muted> : null}
+            <View style={{ height: space.md }} />
+            {medicalMsg ? <Banner text={medicalMsg} tone={medicalMsg.startsWith("Couldn't") ? "amber" : "safe"} /> : null}
+            <Button label="Show my medical card" icon="heart-outline" variant="ghost" size="sm" onPress={() => router.push("/rise")} />
+          </Card>
+        </FadeIn>
       ) : null}
 
-      <SectionTitle title="Nearby" />
-      <Row style={{ marginBottom: space.md }}>
-        <Chip label="Hospitals" selected={placeType === "hospital"} onPress={() => setPlaceType("hospital")} />
-        <Chip label="Police" selected={placeType === "police"} onPress={() => setPlaceType("police")} />
-      </Row>
-      <Card>
-        {!pos ? <Muted>Turn on location to see places near you.</Muted> : null}
-        {pos && places === null ? <ActivityIndicator color={colors.lilac} /> : null}
-        {placesError ? <Banner text={placesError} tone="amber" /> : null}
-        {places?.length === 0 && !placesError ? <Muted>Nothing found nearby.</Muted> : null}
-        {places?.map((p, i) => (
-          <View key={`${p.name}${i}`} style={[styles.place, i > 0 && styles.divider]}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.placeName}>{p.name}</Text>
-              <Muted>
-                {km(p.distanceM)}
-                {p.address ? ` · ${p.address}` : ""}
-              </Muted>
+      <FadeIn index={2}>
+        <SectionHeader title="Nearby" />
+        <Segmented
+          value={placeType}
+          onChange={setPlaceType}
+          options={[
+            { value: "hospital", label: "Hospitals", icon: "medical" },
+            { value: "police", label: "Police", icon: "shield" },
+          ]}
+        />
+        <Card padded={false} style={{ paddingHorizontal: space.lg, paddingVertical: space.xs }}>
+          {!pos ? <Muted style={{ paddingVertical: space.lg }}>Turn on location to see places near you.</Muted> : null}
+          {pos && places === null ? <ActivityIndicator color={colors.violet} style={{ paddingVertical: space.xl }} /> : null}
+          {placesError ? (
+            <View style={{ paddingTop: space.md }}>
+              <Banner text={placesError} tone="amber" />
             </View>
-            {p.phone ? (
-              <PillButton label="Call" variant="dark" onPress={() => dial(p.phone!.replace(/\s/g, ""))} style={styles.callBtn} />
-            ) : (
-              <PillButton label="Map" variant="ghost" onPress={() => Linking.openURL(p.mapsUrl)} style={styles.callBtn} />
-            )}
-          </View>
-        ))}
-        {places?.length ? <Text style={styles.source}>Source: Google Maps</Text> : null}
-      </Card>
-
-      <SectionTitle title="Helplines" />
-      <Card>
-        {!lines ? <ActivityIndicator color={colors.lilac} /> : null}
-        {lines?.helplines.map((h, i) => (
-          <View key={h.number} style={[styles.place, i > 0 && styles.divider]}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.number}>{h.number}</Text>
-              <Text style={type.body}>Use this for: {h.purpose.charAt(0).toLowerCase() + h.purpose.slice(1)}</Text>
-              <Pressable onPress={() => Linking.openURL(h.sourceUrl)}>
-                <Text style={styles.source}>
-                  {h.coverage} · source: {host(h.sourceUrl)} · checked {h.dateVerified}
+          ) : null}
+          {places?.length === 0 && !placesError ? <Muted style={{ paddingVertical: space.lg }}>Nothing found nearby.</Muted> : null}
+          {places?.map((p, i) => (
+            <View key={`${p.name}${i}`} style={[styles.row, i < places.length - 1 && styles.divider]}>
+              <IconCircle
+                icon={placeType === "hospital" ? "medical" : "shield"}
+                tint={placeType === "hospital" ? colors.roseWash : colors.violetWash}
+                color={placeType === "hospital" ? colors.rose : colors.violet}
+                size={42}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={type.h3} numberOfLines={2}>
+                  {p.name}
                 </Text>
-              </Pressable>
+                <Text style={type.small} numberOfLines={1}>
+                  <Text style={{ fontFamily: fonts.sansBold, color: colors.ink }}>{km(p.distanceM)}</Text>
+                  {p.address ? ` · ${p.address}` : ""}
+                </Text>
+              </View>
+              {p.phone ? (
+                <CallButton onPress={() => dial(p.phone!.replace(/\s/g, ""))} label={`Call ${p.name}`} />
+              ) : (
+                <Pressy onPress={() => Linking.openURL(p.mapsUrl)} accessibilityLabel={`Open ${p.name} in Maps`} scaleTo={0.9}>
+                  <View style={styles.mapBtn}>
+                    <Icon name="navigate" size={18} color={colors.violet} />
+                  </View>
+                </Pressy>
+              )}
             </View>
-            <PillButton label="Call" variant="dark" onPress={() => dial(h.number)} style={styles.callBtn} />
-          </View>
+          ))}
+          {places?.length ? (
+            <Row style={styles.source}>
+              <Icon name="logo-google" size={12} color={colors.inkSoft} />
+              <Text style={[type.small, { fontSize: 12 }]}>Source: Google Maps</Text>
+            </Row>
+          ) : null}
+        </Card>
+      </FadeIn>
+
+      <FadeIn index={3}>
+        <SectionHeader title="Helplines" />
+        {!lines ? <ActivityIndicator color={colors.violet} /> : null}
+        {lines?.helplines.map((h) => (
+          <Card key={h.number} style={{ paddingVertical: space.md }}>
+            <Row style={{ gap: space.md }}>
+              <View style={styles.numPill}>
+                <Text style={styles.num}>{h.number}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={type.h3}>{h.purpose}</Text>
+                <Pressable onPress={() => Linking.openURL(h.sourceUrl)} hitSlop={8}>
+                  <Text style={[type.small, { fontSize: 12, marginTop: 2 }]}>
+                    {h.coverage} · {host(h.sourceUrl)} <Icon name="open-outline" size={11} color={colors.inkSoft} />
+                  </Text>
+                </Pressable>
+              </View>
+              <CallButton onPress={() => dial(h.number)} label={`Call ${h.number}`} />
+            </Row>
+          </Card>
         ))}
-      </Card>
-      <Muted style={{ textAlign: "center" }}>Every number here comes from an official government page. Calls open your dialler; you press call.</Muted>
+        <Row style={{ justifyContent: "center", gap: 6, marginTop: space.xs }}>
+          <Icon name="checkmark-done" size={14} color={colors.safe} />
+          <Text style={[type.small, { fontSize: 12 }]}>Every number comes from an official government page.</Text>
+        </Row>
+      </FadeIn>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  medTitle: { ...type.title, color: colors.white },
-  medBody: { color: colors.white, marginTop: 6, fontSize: 15, lineHeight: 21 },
-  address: { fontSize: 26, lineHeight: 34, fontWeight: "700", color: colors.ink, marginVertical: space.sm },
-  place: { flexDirection: "row", alignItems: "center", gap: space.md, paddingVertical: space.md },
-  divider: { borderTopWidth: 1, borderTopColor: colors.line },
-  placeName: { fontSize: 16, fontWeight: "700", color: colors.ink },
-  number: { fontSize: 24, fontWeight: "800", color: colors.ink },
-  callBtn: { minHeight: 42, paddingHorizontal: 18 },
-  source: { fontSize: 12, color: colors.muted, marginTop: 4 },
+  address: { fontFamily: fonts.display, fontSize: 26, lineHeight: 34, color: colors.ink, marginVertical: space.xs },
+  row: { flexDirection: "row", alignItems: "center", gap: space.sm, paddingVertical: 14 },
+  divider: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
+  callBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center", boxShadow: shadows.dark },
+  mapBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.violetWash, alignItems: "center", justifyContent: "center" },
+  numPill: { minWidth: 70, paddingHorizontal: 10, height: 48, borderRadius: radius.sm, backgroundColor: colors.violetWash, alignItems: "center", justifyContent: "center" },
+  num: { fontFamily: fonts.sansExtra, fontSize: 19, color: colors.violet, letterSpacing: 0.3 },
+  source: { justifyContent: "flex-end", gap: 5, paddingVertical: space.sm },
 });

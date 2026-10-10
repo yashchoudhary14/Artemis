@@ -1,15 +1,48 @@
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-import { Avatar, Banner, Brand, Card, Chip, Field, Hero, Muted, PillButton, Row, Screen, SectionTitle } from "@/components/ui";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Animated, Easing, Image, StyleSheet, Text, View } from "react-native";
+import {
+  Avatar,
+  BackHeader,
+  Banner,
+  Button,
+  Card,
+  Chip,
+  FadeIn,
+  Field,
+  Hero,
+  Icon,
+  IconCircle,
+  Pressy,
+  Row,
+  Screen,
+  SectionHeader,
+  Segmented,
+  StatusPill,
+  prefersReducedMotion,
+  type IconName,
+} from "@/components/ui";
 import { startWalk } from "@/lib/actions";
 import { buddyApi, type BuddyState, type Departure } from "@/lib/buddy";
 import { sessionStore } from "@/lib/session";
 import { useStore } from "@/lib/store";
-import { colors, radius, space, type } from "@/theme";
+import { colors, fonts, gradients, radius, shadows, space, type } from "@/theme";
 
 const LEAVE_IN = [10, 20, 30, 45, 60];
+
+const AREA_ICON: Record<string, IconName> = {
+  "Main Gate": "enter-outline",
+  Library: "library-outline",
+  "Academic Complex": "school-outline",
+  Cafeteria: "cafe-outline",
+  "Hostel Zone": "bed-outline",
+  "Market Complex": "storefront-outline",
+  Hospital: "medkit-outline",
+  "Sports Complex": "football-outline",
+  "Guest House": "home-outline",
+  Lakeside: "water-outline",
+};
 
 function timeOf(ms: number) {
   return new Date(ms).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }).toUpperCase();
@@ -29,7 +62,7 @@ export default function Buddy() {
   const [to, setTo] = useState<string | null>(null);
   const [leaveIn, setLeaveIn] = useState(20);
   const [busy, setBusy] = useState<string | null>(null);
-  const [msg, setMsg] = useState<{ text: string; tone: "green" | "coral" | "amber" } | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -38,7 +71,7 @@ export default function Buddy() {
       setAreas(a.areas);
       if (s.verified) setDeps((await buddyApi.departures()).departures);
     } catch (err) {
-      setMsg({ text: (err as Error).message, tone: "coral" });
+      setMsg((err as Error).message);
     }
   }, []);
 
@@ -54,7 +87,7 @@ export default function Buddy() {
     try {
       await fn();
     } catch (err) {
-      setMsg({ text: (err as Error).message, tone: "coral" });
+      setMsg((err as Error).message);
     } finally {
       setBusy(null);
     }
@@ -70,8 +103,7 @@ export default function Buddy() {
 
   const join = (d: Departure) =>
     run(d.id, async () => {
-      const s = await buddyApi.createRequest(d.startArea, d.destArea, d.departAt);
-      setState(s);
+      setState(await buddyApi.createRequest(d.startArea, d.destArea, d.departAt));
       setTab("mine");
     });
 
@@ -94,216 +126,308 @@ export default function Buddy() {
 
   if (state && !state.verified) {
     return (
-      <Screen>
-        <Brand right={<Close />} />
-        <Hero title={"Walk your way.\nTogether."} subtitle={`Only people with a verified @${state.domain || "institute"} email can join.`} />
-        <Card>
-          <Field
-            label="Institute email"
-            placeholder={`you@${state.domain || "institute.ac.in"}`}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-          {codeSent ? (
-            <>
-              <Field label="6-digit code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} />
-              <Muted style={{ marginBottom: space.md }}>Hackathon shortcut: the code is printed in the server log instead of being emailed.</Muted>
-              <PillButton
-                label="Verify"
-                loading={busy === "verify"}
-                onPress={() => run("verify", async () => setState(await buddyApi.verifyEmail(email.trim().toLowerCase(), code.trim())))}
-              />
-            </>
-          ) : (
-            <PillButton
-              label="Send code"
-              loading={busy === "code"}
-              onPress={() =>
-                run("code", async () => {
-                  await buddyApi.startEmail(email.trim().toLowerCase());
-                  setCodeSent(true);
-                })
-              }
+      <Screen bottomInset={40}>
+        <BackHeader title="Walk together" onBack={() => router.back()} />
+        <FadeIn>
+          <Hero title={"Walk your way.\n"} accent="Together." subtitle={`Only verified @${state.domain || "institute"} students can join, so you always know who you're walking with.`} />
+        </FadeIn>
+        <FadeIn index={1}>
+          <Card>
+            <Row style={{ gap: space.sm, marginBottom: space.lg }}>
+              <IconCircle icon="school" />
+              <Text style={[type.small, { flex: 1 }]}>Verify your institute email once. Your family will see your buddy's verified name and photo.</Text>
+            </Row>
+            <Field
+              label="Institute email"
+              icon="mail-outline"
+              placeholder={`you@${state.domain || "institute.ac.in"}`}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
             />
-          )}
-        </Card>
-        {msg ? <Banner text={msg.text} tone={msg.tone} /> : null}
+            {codeSent ? (
+              <>
+                <Field label="6-digit code" icon="keypad-outline" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} />
+                <Banner text="Demo shortcut: the code is printed in the server log instead of being emailed." tone="violet" />
+                <Button
+                  label="Verify"
+                  variant="violet"
+                  iconRight="arrow-forward"
+                  loading={busy === "verify"}
+                  onPress={() => run("verify", async () => setState(await buddyApi.verifyEmail(email.trim().toLowerCase(), code.trim())))}
+                />
+              </>
+            ) : (
+              <Button
+                label="Send code"
+                iconRight="arrow-forward"
+                loading={busy === "code"}
+                onPress={() =>
+                  run("code", async () => {
+                    await buddyApi.startEmail(email.trim().toLowerCase());
+                    setCodeSent(true);
+                  })
+                }
+              />
+            )}
+          </Card>
+          {msg ? <Banner text={msg} tone="sos" /> : null}
+        </FadeIn>
       </Screen>
     );
   }
 
   const m = state?.match;
   return (
-    <Screen>
-      <Brand right={<Close />} />
-      <Hero title={"Walk your way.\nTogether."} />
-      <Row style={{ marginBottom: space.md }}>
-        <Pressable onPress={pickPhoto} style={styles.campus}>
-          {state?.photoUrl ? <Image source={{ uri: state.photoUrl }} style={styles.me} /> : <Text style={{ fontSize: 16 }}>📷</Text>}
-          <Text style={{ fontWeight: "600", color: colors.ink }}>{state?.photoUrl ? "Campus group" : busy === "photo" ? "Uploading…" : "Add your photo"}</Text>
-        </Pressable>
-      </Row>
+    <Screen bottomInset={40}>
+      <BackHeader title="Walk together" onBack={() => router.back()} />
+      <FadeIn>
+        <Text style={type.display}>
+          Walk your way.{"\n"}
+          <Text style={{ fontFamily: fonts.displayItalic, color: colors.violet }}>Together.</Text>
+        </Text>
+        <Pressy onPress={pickPhoto} style={styles.campus} accessibilityLabel="Add your photo">
+          {state?.photoUrl ? <Image source={{ uri: state.photoUrl }} style={styles.me} /> : <Icon name="camera-outline" size={18} color={colors.violet} />}
+          <Text style={type.smallBold}>{state?.photoUrl ? "Campus group" : busy === "photo" ? "Uploading…" : "Add your photo"}</Text>
+          <Icon name="chevron-down" size={14} color={colors.inkSoft} />
+        </Pressy>
+      </FadeIn>
 
-      <View style={styles.segment}>
-        <Pressable onPress={() => setTab("departures")} style={[styles.seg, tab === "departures" && styles.segOn]}>
-          <Text style={[styles.segText, tab === "departures" && { color: colors.white }]}>Departures</Text>
-        </Pressable>
-        <Pressable onPress={() => setTab("mine")} style={[styles.seg, tab === "mine" && styles.segOn]}>
-          <Text style={[styles.segText, tab === "mine" && { color: colors.white }]}>My walk</Text>
-        </Pressable>
-      </View>
+      <FadeIn index={1}>
+        <Segmented
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: "departures", label: "Departures" },
+            { value: "mine", label: "My walk" },
+          ]}
+        />
+      </FadeIn>
 
-      {msg ? <Banner text={msg.text} tone={msg.tone} /> : null}
+      {msg ? <Banner text={msg} tone="sos" /> : null}
 
       {tab === "departures" ? (
         <>
-          <Radar names={deps.map((d) => d.name)} />
-          {deps.length === 0 ? <Muted style={{ textAlign: "center", marginBottom: space.md }}>No one is planning a walk right now. Create one below.</Muted> : null}
-          {deps.map((d) => (
-            <Card key={d.id}>
-              <Row>
-                <View style={styles.depIcon}>
-                  <Text style={{ fontSize: 18 }}>⇢</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.route}>
-                    {d.startArea} → {d.destArea}
-                  </Text>
-                  <Muted>
-                    Leaves {timeOf(d.departAt)} · {d.name}
-                  </Muted>
-                </View>
-                <PillButton label="Request to join" style={styles.smallBtn} loading={busy === d.id} onPress={() => join(d)} />
-              </Row>
-            </Card>
+          <FadeIn index={2}>
+            <Radar names={deps.map((d) => d.name)} />
+          </FadeIn>
+          {deps.length === 0 ? <Text style={[type.small, { textAlign: "center", marginBottom: space.md }]}>No one is planning a walk right now — create one below.</Text> : null}
+          {deps.map((d, i) => (
+            <FadeIn key={d.id} index={3 + i}>
+              <Card style={{ paddingVertical: space.md }}>
+                <Row style={{ gap: space.md }}>
+                  <View style={styles.depIcon}>
+                    <Icon name={AREA_ICON[d.startArea] ?? "navigate-outline"} size={22} color={colors.violet} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={type.h3}>
+                      {d.startArea} <Text style={{ color: colors.violet }}>→</Text> {d.destArea}
+                    </Text>
+                    <Text style={type.small}>Leaves {timeOf(d.departAt)}</Text>
+                    <Row style={{ gap: 4, marginTop: 2 }}>
+                      <Icon name="person-outline" size={12} color={colors.inkSoft} />
+                      <Text style={[type.small, { fontSize: 12 }]}>{d.name} joining</Text>
+                    </Row>
+                  </View>
+                  <Button label="Request to join" size="sm" loading={busy === d.id} onPress={() => join(d)} />
+                </Row>
+              </Card>
+            </FadeIn>
           ))}
-          <SectionTitle title="Create a walk" />
+
+          <SectionHeader title="Create a walk" />
           <Card>
-            <Text style={[type.label, { marginBottom: 8 }]}>From</Text>
+            <Text style={[type.label, { marginBottom: space.sm }]}>From</Text>
             <Row style={styles.wrap}>
               {areas.map((a) => (
-                <Chip key={`f${a}`} label={a} selected={from === a} onPress={() => setFrom(a)} />
+                <Chip key={`f${a}`} label={a} icon={AREA_ICON[a]} selected={from === a} onPress={() => setFrom(a)} />
               ))}
             </Row>
-            <Text style={[type.label, { marginVertical: 8 }]}>To</Text>
+            <Text style={[type.label, { marginVertical: space.sm }]}>To</Text>
             <Row style={styles.wrap}>
               {areas.map((a) => (
-                <Chip key={`t${a}`} label={a} selected={to === a} onPress={() => setTo(a)} />
+                <Chip key={`t${a}`} label={a} icon={AREA_ICON[a]} selected={to === a} onPress={() => setTo(a)} />
               ))}
             </Row>
-            <Text style={[type.label, { marginVertical: 8 }]}>Leaving in (minutes)</Text>
+            <Text style={[type.label, { marginVertical: space.sm }]}>Leaving in</Text>
             <Row style={styles.wrap}>
               {LEAVE_IN.map((n) => (
-                <Chip key={n} label={`${n}`} selected={leaveIn === n} onPress={() => setLeaveIn(n)} />
+                <Chip key={n} label={`${n} min`} selected={leaveIn === n} onPress={() => setLeaveIn(n)} />
               ))}
             </Row>
-            <PillButton label="⊕  Create a walk" big loading={busy === "create"} onPress={create} style={{ marginTop: space.md }} />
+            <Button label="Create a walk" icon="add-circle-outline" size="lg" loading={busy === "create"} onPress={create} style={{ marginTop: space.lg }} />
           </Card>
         </>
       ) : (
-        <>
-          {!state?.request && !m ? <Muted>You have no walk planned. Join a departure or create one.</Muted> : null}
+        <FadeIn index={2}>
+          {!state?.request && !m ? (
+            <Card style={{ alignItems: "center", paddingVertical: space.xxl }}>
+              <IconCircle icon="footsteps-outline" size={56} />
+              <Text style={[type.h2, { marginTop: space.md }]}>No walk planned</Text>
+              <Text style={[type.small, { textAlign: "center", marginTop: 4 }]}>Join a departure or create your own.</Text>
+            </Card>
+          ) : null}
           {state?.request && !m ? (
             <Card>
-              <Text style={styles.route}>
+              <StatusPill text="Looking for a buddy" tone="violet" pulse />
+              <Text style={[type.h2, { marginTop: space.md }]}>
                 {state.request.startArea} → {state.request.destArea}
               </Text>
-              <Muted>Leaves {timeOf(state.request.departAt)} · waiting for someone going the same way (±15 min)</Muted>
-              <PillButton label="Cancel" variant="ghost" onPress={() => run("cancel", async () => setState(await buddyApi.cancelRequest()))} style={{ marginTop: space.md }} />
+              <Text style={type.small}>Leaves {timeOf(state.request.departAt)} · matching anyone going the same way within ±15 min</Text>
+              <Button label="Cancel request" variant="ghost" size="sm" onPress={() => run("cancel", async () => setState(await buddyApi.cancelRequest()))} style={{ marginTop: space.md, alignSelf: "flex-start" }} />
             </Card>
           ) : null}
           {m ? (
-            <Card tint={m.status === "accepted" ? "lilac" : undefined}>
-              <Row>
-                {m.buddy.photoUrl ? <Image source={{ uri: m.buddy.photoUrl }} style={styles.buddyPhoto} /> : <Avatar name={m.buddy.name} size={56} index={2} />}
+            <Card tone={m.status === "accepted" ? "violetSoft" : "glass"}>
+              <Row style={{ gap: space.md }}>
+                {m.buddy.photoUrl ? <Image source={{ uri: m.buddy.photoUrl }} style={styles.buddyPhoto} /> : <Avatar name={m.buddy.name} size={64} index={2} ring />}
                 <View style={{ flex: 1 }}>
-                  <Text style={type.h2}>{m.buddy.name}</Text>
-                  <Muted>Verified institute email</Muted>
+                  <Text style={type.title}>{m.buddy.name}</Text>
+                  <Row style={{ gap: 4 }}>
+                    <Icon name="shield-checkmark" size={14} color={colors.safe} />
+                    <Text style={[type.small, { color: colors.safe }]}>Verified institute email</Text>
+                  </Row>
                 </View>
               </Row>
-              <Text style={[styles.route, { marginTop: space.md }]}>
-                {m.startArea} → {m.destArea}
-              </Text>
-              <Muted>Leaves around {timeOf(m.departAt)}</Muted>
+              <View style={styles.route}>
+                <Icon name={AREA_ICON[m.startArea] ?? "navigate-outline"} size={18} color={colors.violet} />
+                <Text style={[type.h3, { flex: 1 }]}>
+                  {m.startArea} → {m.destArea}
+                </Text>
+                <Text style={type.smallBold}>{timeOf(m.departAt)}</Text>
+              </View>
               {m.status === "accepted" ? (
                 <>
-                  <Banner text="You're walking together. Both families have your buddy's name and photo." tone="green" />
+                  <Banner text="You're walking together. Both families have your buddy's name and photo." tone="safe" />
                   {active ? (
-                    <PillButton label="Open your walk" onPress={() => router.replace("/walk")} />
+                    <Button label="Open your walk" iconRight="arrow-forward" onPress={() => router.replace("/walk")} />
                   ) : (
-                    <PillButton label="Start walk together" big loading={busy === "walk"} onPress={walkTogether} />
+                    <Button label="Start walk together" icon="walk" variant="violet" size="lg" loading={busy === "walk"} onPress={walkTogether} />
                   )}
                 </>
               ) : (
                 <>
-                  <Muted style={{ marginTop: space.sm }}>
+                  <Text style={[type.body, { color: colors.inkSoft, marginBottom: space.md }]}>
                     {m.iAccepted ? `Waiting for ${m.buddy.name} to accept…` : m.theyAccepted ? `${m.buddy.name} accepted. Walk together?` : "Walk together?"}
-                  </Muted>
-                  <Row style={{ marginTop: space.md }}>
-                    <PillButton label="Not now" variant="ghost" style={{ flex: 1 }} onPress={() => run("decline", async () => setState(await buddyApi.decline(m.id)))} />
+                  </Text>
+                  <Row style={{ gap: space.sm }}>
+                    <Button label="Not now" variant="ghost" style={{ flex: 1 }} onPress={() => run("decline", async () => setState(await buddyApi.decline(m.id)))} />
                     {!m.iAccepted ? (
-                      <PillButton label="Accept" style={{ flex: 1 }} loading={busy === "accept"} onPress={() => run("accept", async () => setState(await buddyApi.accept(m.id)))} />
+                      <Button label="Accept" icon="checkmark" variant="violet" style={{ flex: 1 }} loading={busy === "accept"} onPress={() => run("accept", async () => setState(await buddyApi.accept(m.id)))} />
                     ) : null}
                   </Row>
                 </>
               )}
             </Card>
           ) : null}
-        </>
+        </FadeIn>
       )}
     </Screen>
   );
 }
 
-function Close() {
-  return (
-    <Pressable onPress={() => router.back()}>
-      <Text style={{ fontSize: 15, color: colors.muted }}>Close</Text>
-    </Pressable>
-  );
-}
-
-// "People planning a walk" radar from the mock.
+// "People planning a walk" radar with a slow sweep (from the find-a-buddy reference).
 function Radar({ names }: { names: string[] }) {
+  const sweep = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (prefersReducedMotion()) return;
+    const loop = Animated.loop(Animated.timing(sweep, { toValue: 1, duration: 4200, easing: Easing.linear, useNativeDriver: true }));
+    loop.start();
+    return () => loop.stop();
+  }, [sweep]);
   const shown = names.slice(0, 6);
-  const R = 92;
+  const S = 280;
+  const R = 104;
   return (
     <View style={styles.radar}>
-      <View style={styles.ring1} />
-      <View style={styles.ring2} />
+      <View style={[styles.ring, { width: S, height: S, borderRadius: S / 2 }]} />
+      <View style={[styles.ring, styles.ringMid, { width: S * 0.66, height: S * 0.66, borderRadius: S * 0.33 }]} />
+      <View style={[styles.ring, styles.ringInner, { width: S * 0.34, height: S * 0.34, borderRadius: S * 0.17 }]} />
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.sweep, { transform: [{ rotate: sweep.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] }) }] }]}
+      >
+        <View style={styles.sweepArm} />
+      </Animated.View>
       <View style={styles.hub}>
-        <Text style={{ fontSize: 22 }}>👥</Text>
+        <Icon name="people" size={24} color={colors.violet} />
       </View>
       {shown.map((n, i) => {
-        const a = (i / Math.max(shown.length, 1)) * 2 * Math.PI - Math.PI / 2;
+        const a = (i / Math.max(shown.length, 1)) * 2 * Math.PI - Math.PI / 2 + 0.4;
         return (
-          <View key={`${n}${i}`} style={{ position: "absolute", left: 120 + R * Math.cos(a) - 21, top: 120 + R * Math.sin(a) - 21 }}>
-            <Avatar name={n} index={i} size={42} />
+          <View key={`${n}${i}`} style={[styles.person, { left: S / 2 + R * Math.cos(a) - 30, top: S / 2 + R * Math.sin(a) - 26 }]}>
+            <Avatar name={n} index={i} size={44} />
+            <View style={styles.nameTag}>
+              <Text style={styles.nameText} numberOfLines={1}>
+                {n}
+              </Text>
+            </View>
           </View>
         );
       })}
-      <Text style={styles.radarLabel}>People planning a walk</Text>
+      <Text style={styles.radarLabel}>{shown.length ? `${names.length} planning a walk` : "Looking around campus…"}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  campus: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.white, borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: colors.line },
-  me: { width: 28, height: 28, borderRadius: 14 },
-  segment: { flexDirection: "row", backgroundColor: colors.white, borderRadius: radius.pill, padding: 4, borderWidth: 1, borderColor: colors.line, marginBottom: space.md },
-  seg: { flex: 1, paddingVertical: 10, borderRadius: radius.pill, alignItems: "center" },
-  segOn: { backgroundColor: colors.dark },
-  segText: { fontWeight: "700", color: colors.ink },
-  radar: { width: 240, height: 270, alignSelf: "center", marginBottom: space.sm },
-  ring1: { position: "absolute", left: 10, top: 10, width: 220, height: 220, borderRadius: 110, borderWidth: 1, borderColor: colors.line, borderStyle: "dashed" },
-  ring2: { position: "absolute", left: 60, top: 60, width: 120, height: 120, borderRadius: 60, backgroundColor: colors.lilacSoft },
-  hub: { position: "absolute", left: 92, top: 92, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.white, alignItems: "center", justifyContent: "center" },
-  radarLabel: { position: "absolute", bottom: 0, left: 0, right: 0, textAlign: "center", color: colors.muted, fontSize: 13 },
-  depIcon: { width: 44, height: 44, borderRadius: 14, backgroundColor: colors.lilacSoft, alignItems: "center", justifyContent: "center" },
-  route: { fontSize: 16, fontWeight: "700", color: colors.ink },
-  smallBtn: { minHeight: 40, paddingHorizontal: 14 },
+  campus: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    alignSelf: "flex-start",
+    backgroundColor: colors.glassStrong,
+    borderRadius: radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    boxShadow: shadows.soft,
+    marginTop: space.md,
+    marginBottom: space.lg,
+  },
+  me: { width: 26, height: 26, borderRadius: 13 },
+  radar: { width: 280, height: 310, alignSelf: "center", marginBottom: space.sm },
+  ring: { position: "absolute", left: 0, top: 0, borderWidth: 1, borderColor: "rgba(116,66,216,0.18)", backgroundColor: "rgba(239,232,255,0.35)" },
+  ringMid: { left: 280 * 0.17, top: 280 * 0.17, backgroundColor: "rgba(239,232,255,0.55)" },
+  ringInner: { left: 280 * 0.33, top: 280 * 0.33, backgroundColor: "rgba(226,213,255,0.8)" },
+  // A quarter-disc from the centre to the top-right, rotated around the radar's centre.
+  sweep: { position: "absolute", left: 0, top: 0, width: 280, height: 280, alignItems: "flex-start" },
+  sweepArm: {
+    width: 140,
+    height: 140,
+    marginLeft: 140,
+    borderTopRightRadius: 140,
+    experimental_backgroundImage: "linear-gradient(20deg, rgba(139,92,246,0.32) 0%, rgba(139,92,246,0.08) 45%, rgba(139,92,246,0) 75%)",
+  },
+  hub: {
+    position: "absolute",
+    left: 140 - 30,
+    top: 140 - 30,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.white,
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: shadows.violet,
+  },
+  person: { position: "absolute", width: 60, alignItems: "center" },
+  nameTag: { marginTop: -6, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: colors.white, boxShadow: shadows.soft, maxWidth: 76 },
+  nameText: { fontFamily: fonts.sansBold, fontSize: 11, color: colors.ink },
+  radarLabel: { position: "absolute", bottom: 0, left: 0, right: 0, textAlign: "center", fontFamily: fonts.sansSemi, fontSize: 13, color: colors.inkSoft },
+  depIcon: { width: 50, height: 50, borderRadius: 16, backgroundColor: colors.violetWash, alignItems: "center", justifyContent: "center" },
   wrap: { flexWrap: "wrap" },
-  buddyPhoto: { width: 56, height: 56, borderRadius: 28 },
+  buddyPhoto: { width: 64, height: 64, borderRadius: 32, borderWidth: 3, borderColor: colors.white },
+  route: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "rgba(255,255,255,0.7)",
+    borderRadius: radius.sm,
+    padding: space.md,
+    marginVertical: space.md,
+    experimental_backgroundImage: gradients.glass,
+  },
 });

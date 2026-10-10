@@ -4,14 +4,28 @@ import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import MapView, { Circle, Marker, PROVIDER_GOOGLE, type MapPressEvent } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Banner, Field, Muted, PillButton, Row } from "@/components/ui";
+import { Banner, Button, Field, Icon, IconButton, Row } from "@/components/ui";
 import { currentPosition } from "@/lib/geo";
 import { useStore } from "@/lib/store";
 import { insideZoneStore, loadZones, saveZones, zonesStore, type Zone } from "@/lib/zones";
-import { colors, radius, space, type } from "@/theme";
+import { colors, fonts, radius, shadows, space, type } from "@/theme";
 
 // Demo default: IIT Guwahati.
 const DEFAULT = { latitude: 26.1878, longitude: 91.6916 };
+
+// Soft lilac Google map style to match the app.
+const MAP_STYLE = [
+  { elementType: "geometry", stylers: [{ color: "#f7f1f8" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#6b5a7a" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#fbf7fc" }] },
+  { featureType: "poi", elementType: "geometry", stylers: [{ color: "#efe6f5" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#e3f1e6" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#fdf6fb" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#f3e3f0" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#d9d2f6" }] },
+];
 
 export default function Zones() {
   const insets = useSafeAreaInsets();
@@ -56,6 +70,7 @@ export default function Zones() {
         provider={PROVIDER_GOOGLE}
         style={StyleSheet.absoluteFill}
         initialRegion={{ ...DEFAULT, latitudeDelta: 0.02, longitudeDelta: 0.02 }}
+        customMapStyle={MAP_STYLE}
         showsUserLocation
         onPress={onPress}
       >
@@ -64,100 +79,124 @@ export default function Zones() {
             key={z.id}
             center={{ latitude: z.lat, longitude: z.lng }}
             radius={z.radiusM}
-            strokeColor="rgba(139,92,246,0.9)"
+            strokeColor="rgba(116,66,216,0.85)"
             fillColor="rgba(139,92,246,0.18)"
             strokeWidth={2}
           />
         ))}
         {center ? (
           <>
-            <Circle center={center} radius={radiusM} strokeColor={colors.lilac} fillColor="rgba(139,92,246,0.28)" strokeWidth={3} />
-            <Marker coordinate={center} pinColor={colors.lilac} />
+            <Circle center={center} radius={radiusM} strokeColor={colors.violet} fillColor="rgba(139,92,246,0.3)" strokeWidth={3} />
+            <Marker coordinate={center} pinColor={colors.violet} />
           </>
         ) : null}
       </MapView>
 
       <View style={[styles.topBar, { top: insets.top + 8 }]}>
-        <Pressable onPress={() => router.back()} style={styles.back}>
-          <Text style={{ fontSize: 20, color: colors.ink }}>‹</Text>
-        </Pressable>
-        <View style={styles.pill}>
-          <Text style={{ fontWeight: "700", color: colors.ink }}>Private zones</Text>
+        <IconButton icon="chevron-back" label="Back" onPress={() => router.back()} />
+        <View style={styles.titlePill}>
+          <Icon name="school-outline" size={16} color={colors.violet} />
+          <Text style={styles.titleText}>Private zones</Text>
         </View>
+        <View style={{ width: 44 }} />
       </View>
 
       <View style={[styles.sheet, { paddingBottom: insets.bottom + space.lg }]}>
         <View style={styles.handle} />
         <Text style={type.title}>Your space stays yours.</Text>
-        <Row style={{ marginTop: space.sm, marginBottom: space.md, flexWrap: "wrap" }}>
+        <Row style={{ marginTop: space.sm, marginBottom: space.md, gap: space.xs, flexWrap: "wrap" }}>
           <View style={styles.tag}>
-            <Text style={styles.tagText}>{inside.inside ? `Routine sharing paused · ${inside.zoneName}` : "Routine sharing paused inside zones"}</Text>
+            <Icon name="pause-circle-outline" size={14} color={colors.violet} />
+            <Text style={styles.tagText}>{inside.inside ? `Sharing paused · ${inside.zoneName}` : "Routine sharing paused inside zones"}</Text>
           </View>
         </Row>
         {center ? (
           <>
-            <Text style={type.body}>
-              Radius: <Text style={{ fontWeight: "800" }}>{radiusM} m</Text>
-            </Text>
+            <Row style={{ justifyContent: "space-between", alignItems: "baseline" }}>
+              <Text style={type.bodyMedium}>Radius</Text>
+              <Text style={styles.radius}>{radiusM} m</Text>
+            </Row>
             <Slider
               minimumValue={50}
               maximumValue={500}
               step={10}
               value={radiusM}
               onValueChange={(v) => setRadiusM(Math.round(v))}
-              minimumTrackTintColor={colors.lilac}
-              maximumTrackTintColor={colors.line}
-              thumbTintColor={colors.lilac}
+              minimumTrackTintColor={colors.violet}
+              maximumTrackTintColor="rgba(74,40,102,0.15)"
+              thumbTintColor={colors.violet}
             />
             <Row style={{ justifyContent: "space-between", marginBottom: space.sm }}>
-              <Muted>50 m</Muted>
-              <Muted>500 m</Muted>
+              <Text style={type.small}>50 m</Text>
+              <Text style={type.small}>500 m</Text>
             </Row>
-            <Field placeholder="Name (Home, Hostel…)" value={name} onChangeText={setName} maxLength={40} />
+            <Field icon="bookmark-outline" placeholder="Name it — Home, Hostel…" value={name} onChangeText={setName} maxLength={40} />
           </>
         ) : (
-          <Muted style={{ marginBottom: space.md }}>Tap the map to place a zone. Inside a zone, SafeWalk stops sharing your location and stops listening, but SOS still works.</Muted>
+          <Row style={styles.hint}>
+            <Icon name="finger-print-outline" size={18} color={colors.violet} />
+            <Text style={[type.small, { flex: 1 }]}>Tap the map to place a zone. Inside it, SafeWalk stops sharing your location and listening — SOS still works.</Text>
+          </Row>
         )}
-        {msg ? <Banner text={msg} tone={msg.startsWith("Saved") ? "green" : "amber"} /> : null}
-        {center ? <PillButton label="Save zone" variant="lilac" onPress={save} /> : null}
+        {msg ? <Banner text={msg} tone={msg.startsWith("Saved") ? "safe" : "amber"} /> : null}
+        {center ? <Button label="Save private zone" icon="checkmark" variant="violet" size="lg" onPress={save} /> : null}
         {zones.length ? (
           <View style={{ marginTop: space.md }}>
             {zones.map((z) => (
               <Row key={z.id} style={styles.zoneRow}>
-                <Text style={{ flex: 1, color: colors.ink, fontWeight: "600" }}>
-                  {z.name} · {z.radiusM} m
+                <View style={styles.zoneDot} />
+                <Text style={[type.h3, { flex: 1 }]}>
+                  {z.name} <Text style={type.small}>· {z.radiusM} m</Text>
                 </Text>
-                <Pressable onPress={() => remove(z.id)} hitSlop={10}>
-                  <Text style={{ color: colors.coral, fontWeight: "700" }}>Remove</Text>
+                <Pressable onPress={() => remove(z.id)} hitSlop={12} accessibilityRole="button" accessibilityLabel={`Remove ${z.name}`}>
+                  <Icon name="trash-outline" size={18} color={colors.sosDeep} />
                 </Pressable>
               </Row>
             ))}
           </View>
         ) : null}
-        <Muted style={{ textAlign: "center", marginTop: space.md }}>ⓘ Boundary checked on this device. Zones are never uploaded.</Muted>
+        <Row style={{ justifyContent: "center", gap: 6, marginTop: space.md }}>
+          <Icon name="shield-checkmark-outline" size={14} color={colors.safe} />
+          <Text style={[type.small, { fontSize: 12 }]}>Boundary checked on this device · never uploaded</Text>
+        </Row>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  topBar: { position: "absolute", left: space.lg, right: space.lg, flexDirection: "row", alignItems: "center", gap: space.sm },
-  back: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.white, alignItems: "center", justifyContent: "center", elevation: 3 },
-  pill: { paddingHorizontal: 16, height: 44, borderRadius: 22, backgroundColor: colors.white, justifyContent: "center", elevation: 3 },
+  topBar: { position: "absolute", left: space.lg, right: space.lg, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  titlePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 18,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.glassStrong,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    boxShadow: shadows.soft,
+  },
+  titleText: { fontFamily: fonts.sansBold, fontSize: 15, color: colors.ink },
   sheet: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.white,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: space.lg,
-    elevation: 12,
-    maxHeight: "62%",
+    backgroundColor: "rgba(255,255,255,0.97)",
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    padding: space.xl,
+    paddingTop: space.md,
+    boxShadow: "0px -12px 40px rgba(74,40,102,0.16)",
+    maxHeight: "64%",
   },
-  handle: { alignSelf: "center", width: 44, height: 5, borderRadius: 3, backgroundColor: colors.line, marginBottom: space.md },
-  tag: { backgroundColor: colors.lilacSoft, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 6 },
-  tagText: { color: colors.lilacDeep, fontSize: 13, fontWeight: "600" },
-  zoneRow: { paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.line },
+  handle: { alignSelf: "center", width: 44, height: 5, borderRadius: 3, backgroundColor: "rgba(74,40,102,0.15)", marginBottom: space.md },
+  tag: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.violetWash, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 7 },
+  tagText: { fontFamily: fonts.sansSemi, fontSize: 13, color: colors.violet },
+  radius: { fontFamily: fonts.display, fontSize: 28, color: colors.violet },
+  hint: { gap: 10, alignItems: "flex-start", backgroundColor: colors.violetWash, borderRadius: radius.sm, padding: space.md, marginBottom: space.sm },
+  zoneRow: { paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.hairline, gap: space.sm },
+  zoneDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.violetSoft, borderWidth: 2, borderColor: colors.violet },
 });

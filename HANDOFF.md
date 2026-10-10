@@ -54,7 +54,7 @@ _In order._
 - Maps: native `react-native-maps` (Google) for safe zones; Leaflet + OSM on the guardian page.
 - Demo location: Guwahati, Assam (IIT Guwahati). Medical fast-dial: 108 in Assam, 112 elsewhere.
 - Keyword listening defaults to **hi-IN** (hears "बचाओ" and "हेल्प"); en-IN selectable. Words: help, bachao (+ spellings) + one custom word.
-- UI: Artemis layout (`design 2/…2.45.09 PM.jpeg`) + pink/lilac palette (`design 1`). No icon library is installed, so tab icons are text glyphs; gradients use RN 0.86 `experimental_backgroundImage`.
+- UI ("Moonlit blush" design system, `mobile/src/theme.ts` + `mobile/src/components/ui.tsx`): Artemis layout (`design 2`) + blush→lavender palette and serif voice (`design 1`). Fonts: Playfair Display (headlines, italic accents) + Plus Jakarta Sans (UI), icons: Ionicons — all JS-only packages (`@expo-google-fonts/*`, `@expo/vector-icons`) loaded at runtime with `expo-font` (already in the dev build), so **no APK rebuild**. The `expo-font` config plugin is intentionally NOT added (keeps native config identical to build #2). Gradients/shadows use RN 0.86 `experimental_backgroundImage` (linear + radial) and `boxShadow`; never use the string `"none"` for these (RN can't parse it). Motion: staggered fade-ins, press-scale, SOS pulse rings, waveform, radar sweep; all skipped when Reduce Motion is on. Google map uses a custom lilac style.
 - Buddy campus areas are a fixed list in `server/src/buddy/areas.ts` (edit for the real campus).
 
 ## How to run
