@@ -20,11 +20,14 @@ _What works right now, and how it was tested._
 - EAS project: `@astra-yages/mobile` (id `5c776287-b32b-4b81-9421-02967a77935a`). Android package `com.safewalk.app`. Dev build #2 APK: https://expo.dev/artifacts/eas/kf7f558I2teZ6wesg_W6sIlb1z9UU6nZBNpa6DjUPVU.apk
 
 - **Artemis redesign + 2 new Cline features (10 Oct, later):** app renamed Artemis. Light "Artemis" design system (warm off-white, faint blush, black pill CTAs, Instrument Serif display, Geist UI, Marcellus wordmark, crescent mark). Floating tab bar Home · Walk · SOS (raised, centre) · Map · Help; Rise reached from Home. New screens: Map tab (opens wide, camera flies to your location), welcome splash, incident report. Home shows all features as tiles. New server endpoints (read-only Cline agent + plain-code fallback): `POST /briefing` (3 walk tips from time/sunset + Google Places) and `GET /sessions/:id/report` (incident report from session record + transcripts). Tested: server tsc clean, both endpoints answered (fallback path, no keys in the test box); mobile tsc clean, Android bundle exports. Not yet on a phone. Fonts are JS-only packages (no new native build needed).
+- **Merged `main-otbdmz` into `main` (10 Oct, evening).** Fixes on top: `server/agent/safety.ts` no longer treats numbers followed by a unit (`m`, `km`, `min`, `hrs`, `secs`) as unverified phone numbers (this was pushing `/briefing` onto the fallback every time); briefing fallback shows distances under 1 km in metres. Tested: mobile + server `tsc` clean; on the live server `/briefing` and `/sessions/:id/report` returned `byAi: true` (before the credits ran out), report gives 401 without a token. `npm run smoke:ci`: 51/52 pass. The one failure ("AI summary of transcripts") is because **Cline credits ran out**, not a code bug.
 
 ## In progress
 _Exactly where the last session stopped._
 
 - On-device testing of the app has not started. Expect small fixes (permissions flow, background behaviour, layout on small screens).
+- **Cline credits balance is $0** (server log: "Insufficient balance"). Every AI step now uses the template / plain-code fallback. Top up at app.cline.bot before the demo, then rerun `npm run smoke:ci` with the demo server stopped.
+- Live demo tunnel this session: `https://prevent-judge-aurora-license.trycloudflare.com` (changes on every restart; `demo.ps1` rewrites `server/.env` and `mobile/src/demoServer.ts`).
 
 ## Next steps
 _In order._
@@ -123,6 +126,7 @@ Used to build `data/helplines.json`. Fields: number, purpose, coverage, source U
 - **Google Maps key is unrestricted** (hackathon shortcut). Restrict it to the package + SHA-1 after the demo.
 - **Telegram limit:** a bot can only message people who pressed Start once. The app's "Add and share Telegram link" flow handles this; test it with every team phone before the demo.
 - **Buddy email codes** are printed in the server log (allowed shortcut), not emailed.
+- **`npm run smoke:ci` uses port 3000.** If the demo server is running, the test server can't start and the tests run against the live demo server and its database. Stop the demo server first.
 
 ## Last commit
 

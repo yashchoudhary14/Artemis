@@ -37,6 +37,13 @@ JSON in and out. Endpoints marked 🔒 need `Authorization: Bearer <token>` (tok
 | GET 🔒 | `/nearby?type=hospital\|police&lat=..&lng=..` | `{ source: "Google Maps", places: [{ name, address, phone, lat, lng, distanceM, mapsUrl }] }` sorted by distance (Places API (New)). |
 | POST 🔒 | `/medical` | Body `{ lat?, lng?, accuracy?, battery?, state? }` → `{ ok, sessionId, guardianUrl, ambulanceNumber }`. Notifies the inner circle with the location (template). |
 
+## Companion (Cline agent, read-only, plain-code fallback)
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| POST 🔒 | `/briefing` | `{ lat?, lng?, destination?, timerMinutes? (1–240) }` | `{ tips: string[3], byAi, source }`. Walk tips from time of day / sunset + nearest hospital and police (Google Places only). Any text with an unverified phone number falls back to the plain-code tips. |
+| GET 🔒 | `/sessions/:id/report` | — | Incident report built from the session record + transcripts, with `byAi`. 404 if the session is not hers. |
+
 ## Guardian link (no login)
 
 | Method | Path | Returns |

@@ -3,13 +3,15 @@
 
 const digitsOf = (s: string) => s.replace(/\D/g, "");
 
-// Strip things that contain digits but are not phone numbers: links, times, percentages, decimals.
+// Strip things that contain digits but are not phone numbers: links, times, percentages, decimals,
+// and measurements with a unit ("259 m", "2 km", "20 min"); a phone number is never followed by a unit.
 function withoutHarmlessNumbers(text: string): string {
   return text
     .replace(/https?:\/\/\S+/gi, " ")
     .replace(/\b\d{1,2}[:.]\d{2}\s?(am|pm)?\b/gi, " ")
     .replace(/\b\d{1,3}\s?%/g, " ")
-    .replace(/\b\d+\.\d+\b/g, " ");
+    .replace(/\b\d+\.\d+\b/g, " ")
+    .replace(/\b\d{1,5}\s?(m|km|metres?|meters?|mins?|minutes?|hrs?|hours?|secs?|seconds?)\b/gi, " ");
 }
 
 // A known number matches if the digits are equal, or equal after dropping +91 / leading 0.

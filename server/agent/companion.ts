@@ -163,8 +163,9 @@ export async function walkBriefing(input: BriefingInput): Promise<Briefing> {
     tips.push(dark ? `It's dark${sun ? ` since ${formatTime(sun.sunset)}` : ""}. Stick to busy, lit roads.` : `Daylight${sun ? ` until ${formatTime(sun.sunset)}` : ""}. Keep your live link on anyway.`);
     const h = (await nearby("hospital"))[0];
     const p = (await nearby("police"))[0];
-    if (h) tips.push(`Nearest hospital: ${h.name}, ${(h.distanceM / 1000).toFixed(1)} km.`);
-    if (p) tips.push(`Nearest police: ${p.name}, ${(p.distanceM / 1000).toFixed(1)} km.`);
+    const dist = (m: number) => (m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`);
+    if (h) tips.push(`Nearest hospital: ${h.name}, ${dist(h.distanceM)}.`);
+    if (p) tips.push(`Nearest police: ${p.name}, ${dist(p.distanceM)}.`);
     if (tips.length < 3) tips.push(input.timerMinutes ? `If you're not there in ${input.timerMinutes} min, your circle hears from Artemis.` : "Set a timer so your circle knows when to expect you.");
     value = { tips: tips.slice(0, 3), byAi: false, source: h || p ? "Google Maps" : "Artemis" };
   }
