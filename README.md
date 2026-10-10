@@ -51,6 +51,10 @@ npm run dev
 
 Check: open http://localhost:3000/health and you should see `{"ok":true,...}`.
 
+The database is created automatically at `server/data/safewalk.db` (gitignored). Delete that file to start fresh.
+
+**Telegram:** only ONE running server may use the bot token at a time (Telegram returns `409 Conflict` otherwise). If two laptops run the server, set `NOTIFY_PROVIDER=console` and leave `TELEGRAM_BOT_TOKEN` empty on the second one.
+
 ### 5. Start the public tunnel (second terminal)
 
 ```powershell
@@ -101,3 +105,20 @@ npx eas-cli@latest env:create --name GOOGLE_MAPS_API_KEY --value <KEY> --environ
 cd server; npm run typecheck
 cd mobile; npx tsc --noEmit; npx expo-doctor
 ```
+
+### Server end-to-end smoke test (Phase 1)
+
+Checks walk start, timer expiry alert, duress PIN, the dead man's switch, safe-zone behaviour and cancel. It takes about 75 s. Terminal 1:
+
+```powershell
+cd server
+$env:NOTIFY_PROVIDER='console'; $env:HEARTBEAT_TIMEOUT_SECONDS='10'; $env:TELEGRAM_BOT_TOKEN=''; npm start
+```
+
+Terminal 2:
+
+```powershell
+cd server; npm run smoke
+```
+
+All lines should say `PASS`. The alert texts appear in terminal 1 as `[console notify]`.
