@@ -120,7 +120,7 @@ export default function Profile() {
 
   const shareLink = (who: string, url: string) =>
     Share.share({
-      message: `Hi ${who}, I've added you as an emergency contact on SafeWalk. Please open this link and press Start in Telegram, so SafeWalk can message you if I ever need help: ${url}`,
+      message: `Hi ${who}, I've added you as an emergency contact on Artemis. Please open this link and press Start in Telegram, so Artemis can message you if I ever need help: ${url}`,
     });
 
   const addContact = () =>
@@ -133,7 +133,7 @@ export default function Profile() {
     });
 
   const removeContact = (id: string, who: string) =>
-    Alert.alert("Remove contact?", `${who} will no longer get SafeWalk alerts.`, [
+    Alert.alert("Remove contact?", `${who} will no longer get Artemis alerts.`, [
       { text: "Cancel", style: "cancel" },
       {
         text: "Remove",
@@ -231,7 +231,7 @@ export default function Profile() {
               {!me ? <Banner tone="amber" text="Create your account in the Account tab first." /> : null}
               {me ? (
                 <Card style={{ paddingVertical: space.xs }}>
-                  {me.contacts.length === 0 ? <Text style={[type.bodySoft, { paddingVertical: space.md }]}>No one yet. Add the people who should hear from SafeWalk.</Text> : null}
+                  {me.contacts.length === 0 ? <Text style={[type.bodySoft, { paddingVertical: space.md }]}>No one yet. Add the people who should hear from Artemis.</Text> : null}
                   {me.contacts.map((c, i) => (
                     <ListItem
                       key={c.id}
@@ -289,7 +289,7 @@ export default function Profile() {
               {me ? (
                 <Card>
                   <Text style={type.cardTitle}>If nobody responds</Text>
-                  <Text style={[type.small, { marginTop: 4 }]}>SafeWalk messages your inner circle one by one, waiting this long for “I'm on it”.</Text>
+                  <Text style={[type.small, { marginTop: 4 }]}>Artemis messages your inner circle one by one, waiting this long for “I'm on it”.</Text>
                   <Row style={{ alignItems: "baseline", marginTop: space.md }}>
                     <Text style={styles.waitNum}>{wait}</Text>
                     <Text style={type.bodySoft}>min between contacts</Text>
@@ -335,11 +335,11 @@ export default function Profile() {
             <FadeIn key="account">
               <Card>
                 <Field label="Your name" icon="person-outline" value={name} onChangeText={setName} maxLength={60} />
-                <Button label={me ? "Save name" : "Create my SafeWalk"} iconRight="arrow-forward" loading={busy === "name"} onPress={saveName} />
+                <Button label={me ? "Save name" : "Create my Artemis"} iconRight="arrow-forward" loading={busy === "name"} onPress={saveName} />
               </Card>
               <Card>
                 <Field
-                  label="SafeWalk server"
+                  label="Artemis server"
                   icon="server-outline"
                   placeholder="https://xyz.trycloudflare.com"
                   autoCapitalize="none"

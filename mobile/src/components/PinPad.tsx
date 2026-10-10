@@ -34,7 +34,7 @@ export function PinPad({
 
   return (
     <FadeIn style={styles.wrap}>
-      <Text style={type.hero}>{title}</Text>
+      <Text style={[type.title, { textAlign: "center" }]}>{title}</Text>
       {hint ? <Text style={[type.accent, { marginTop: 6 }]}>{hint}</Text> : null}
       <View style={styles.dots}>
         {Array.from({ length }, (_, i) => (

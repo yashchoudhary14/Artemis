@@ -6,25 +6,12 @@ import MapView, { Circle, Marker, PROVIDER_GOOGLE, type MapPressEvent } from "re
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Banner, Button, Chip, ChipRow, Field, Icon, RoundIconButton, Row } from "@/components/ui";
 import { currentPosition } from "@/lib/geo";
+import { DEFAULT_CENTER, MAP_STYLE } from "@/lib/mapStyle";
 import { useStore } from "@/lib/store";
 import { insideZoneStore, loadZones, saveZones, zonesStore, type Zone } from "@/lib/zones";
 import { colors, fonts, radius, shadows, space, type } from "@/theme";
 
-// Demo default: IIT Guwahati.
-const DEFAULT = { latitude: 26.1878, longitude: 91.6916 };
-
-// Soft pink Google map style to match the app (Android). iOS uses Apple Maps.
-const MAP_STYLE = [
-  { elementType: "geometry", stylers: [{ color: "#fbf1f4" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#7a6670" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#fdf8fa" }] },
-  { featureType: "poi", elementType: "geometry", stylers: [{ color: "#f4e6ec" }] },
-  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#e6f2e8" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
-  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#f7e1ea" }] },
-  { featureType: "transit", stylers: [{ visibility: "off" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#e3d6f3" }] },
-];
+const DEFAULT = DEFAULT_CENTER;
 
 const NAMES = ["Home", "Hostel", "Library", "Department"];
 
@@ -77,11 +64,11 @@ export default function Zones() {
         onPress={onPress}
       >
         {zones.map((z) => (
-          <Circle key={z.id} center={{ latitude: z.lat, longitude: z.lng }} radius={z.radiusM} strokeColor="rgba(201,42,102,0.85)" fillColor="rgba(201,42,102,0.14)" strokeWidth={2} />
+          <Circle key={z.id} center={{ latitude: z.lat, longitude: z.lng }} radius={z.radiusM} strokeColor="rgba(160,86,111,0.7)" fillColor="rgba(201,112,141,0.10)" strokeWidth={2} />
         ))}
         {center ? (
           <>
-            <Circle center={center} radius={radiusM} strokeColor={colors.magenta} fillColor="rgba(201,42,102,0.24)" strokeWidth={3} />
+            <Circle center={center} radius={radiusM} strokeColor={colors.magenta} fillColor="rgba(201,112,141,0.18)" strokeWidth={3} />
             <Marker coordinate={center} pinColor={colors.magenta} />
           </>
         ) : null}
@@ -129,7 +116,7 @@ export default function Zones() {
         ) : (
           <Row style={styles.hint}>
             <Icon name="hand-left-outline" size={17} color={colors.magenta} />
-            <Text style={[type.small, { flex: 1 }]}>Tap the map to place a zone. Inside it, SafeWalk stops sharing your location and stops listening — SOS still works.</Text>
+            <Text style={[type.small, { flex: 1 }]}>Tap the map to place a zone. Inside it, Artemis stops sharing your location and stops listening — SOS still works.</Text>
           </Row>
         )}
         {msg ? <Banner text={msg} tone={msg.startsWith("Saved") ? "safe" : "amber"} /> : null}

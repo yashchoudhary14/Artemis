@@ -1,6 +1,6 @@
 import { getServerUrl, getToken } from "./storage";
 
-// Typed client for the SafeWalk server (see docs/API.md).
+// Typed client for the Artemis server (see docs/API.md).
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {
@@ -121,6 +121,19 @@ export interface Location {
   state?: string;
 }
 
+export interface Briefing {
+  tips: string[];
+  byAi: boolean;
+  source: string;
+}
+
+export interface IncidentReport {
+  summary: string;
+  timeline: { time: string; text: string }[];
+  byAi: boolean;
+  generatedAt: number;
+}
+
 // ---- Endpoints ----
 
 export const api = {
@@ -152,6 +165,9 @@ export const api = {
     ),
   nearby: (type: "hospital" | "police", lat: number, lng: number) =>
     request<{ source: string; places: Place[] }>("GET", `/nearby?type=${type}&lat=${lat}&lng=${lng}`),
+  briefing: (b: { lat?: number; lng?: number; destination?: string; timerMinutes?: number }) =>
+    request<Briefing>("POST", "/briefing", b, { timeoutMs: 40000 }),
+  report: (id: string) => request<IncidentReport>("GET", `/sessions/${id}/report`, undefined, { timeoutMs: 40000 }),
   medical: (b: Location) => request<StartedSession & { ok: true; ambulanceNumber: string }>("POST", "/medical", b),
 };
 

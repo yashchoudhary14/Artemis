@@ -136,7 +136,7 @@ export default function Buddy() {
     return (
       <Screen header={header} bottomInset={40}>
         <FadeIn>
-          <Hero title="Walk your way. Together." accent={`Sign in with your @${state.domain || "institute"} email`} />
+          <Hero title="Walk with me." accent={`Sign in with your @${state.domain || "institute"} email`} />
         </FadeIn>
         <FadeIn index={1}>
           <Card>
@@ -171,7 +171,7 @@ export default function Buddy() {
   return (
     <Screen header={header} bottomInset={40}>
       <FadeIn>
-        <Hero title="Walk your way. Together." style={{ marginBottom: space.md }} />
+        <Hero title="Walk with me." style={{ marginBottom: space.md }} />
       </FadeIn>
       <UnderlineTabs
         value={tab}

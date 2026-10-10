@@ -1,8 +1,10 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { Share, StyleSheet, Text, Vibration, View } from "react-native";
+import { Pressable, Share, StyleSheet, Text, TextInput, Vibration, View } from "react-native";
 import { PinPad } from "@/components/PinPad";
 import {
+  ArtemisLabel,
+  Avatar,
   Banner,
   Bubble,
   Button,
@@ -15,18 +17,20 @@ import {
   HeaderIcon,
   Hero,
   Icon,
+  Pressy,
   Row,
   Screen,
   StatusPill,
 } from "@/components/ui";
 import { endWithPin, startWalk } from "@/lib/actions";
 import { meStore } from "@/lib/account";
+import { useBriefing } from "@/lib/briefing";
 import { sessionStore } from "@/lib/session";
 import { useStore } from "@/lib/store";
 import { insideZoneStore } from "@/lib/zones";
 import { colors, fonts, gradients, radius, space, type } from "@/theme";
 
-const TIMERS = [2, 5, 10, 15, 30];
+const TIMERS = [5, 10, 15, 20, 30];
 
 function useNow(active: boolean) {
   const [now, setNow] = useState(Date.now());
@@ -57,6 +61,7 @@ export default function Walk() {
   const [pinError, setPinError] = useState<string | null>(null);
   const [ended, setEnded] = useState(false);
   const now = useNow(Boolean(active));
+  const { briefing, loading: loadingBrief } = useBriefing(destination, minutes, !active);
 
   useEffect(() => {
     if (params.destination) setDestination(params.destination);
@@ -139,12 +144,12 @@ export default function Walk() {
           <View style={styles.footer}>
             <Button label="I've arrived" icon="checkmark-circle-outline" size="lg" onPress={() => setAskPin(true)} />
             <Row style={{ gap: space.xs, marginTop: space.xs }}>
-              <Button label="Share link" icon="share-outline" variant="light" size="sm" style={{ flex: 1 }} onPress={() => Share.share({ message: `My SafeWalk live link: ${active.guardianUrl}` })} />
+              <Button label="Share link" icon="share-outline" variant="light" size="sm" style={{ flex: 1 }} onPress={() => Share.share({ message: `My Artemis live link: ${active.guardianUrl}` })} />
               <Button label="SOS" icon="call" variant="sos" size="sm" style={{ flex: 1 }} onPress={() => router.push("/sos")} />
             </Row>
           </View>
         }
-        bottomInset={210}
+        bottomInset={300}
       >
         <FadeIn>
           <Bubble side="right" time={clock(active.startedAt)} read>
@@ -184,33 +189,81 @@ export default function Walk() {
   }
 
   return (
-    <Screen header={header("New walk", "Check-in timer")}>
-      <FadeIn>
-        <Hero title="Where are you going, and how long will it take?" />
-      </FadeIn>
-      <FadeIn index={1}>
-        <Card>
-          <Field label="Destination" icon="flag-outline" placeholder="e.g. Hostel" value={destination} onChangeText={setDestination} maxLength={120} />
-          <Text style={[type.small, { marginBottom: 8, fontFamily: fonts.sansMedium }]}>Check-in timer</Text>
-          <ChipRow wrap>
-            {TIMERS.map((m) => (
-              <Chip key={m} icon="time-outline" label={`${m} min`} selected={minutes === m} onPress={() => setMinutes(m)} />
-            ))}
-          </ChipRow>
-          <Row style={styles.note}>
-            <Icon name="shield-checkmark-outline" size={16} color={colors.magenta} />
-            <Text style={[type.small, { flex: 1 }]}>Your circle sees your live location only during the walk. If you don't check in, they hear from SafeWalk.</Text>
-          </Row>
+    <Screen
+      header={<Header left={<HeaderIcon icon="chevron-back" label="Back" onPress={() => (router.canGoBack() ? router.back() : router.push("/"))} />} title="New walk" />}
+      footer={
+        <View style={styles.footer}>
           {error ? <Banner text={error} tone="sos" /> : null}
           <Button label="Start walk" iconRight="arrow-forward" size="lg" loading={busy} onPress={begin} />
-        </Card>
+        </View>
+      }
+      bottomInset={130}
+    >
+      <FadeIn>
+        <Text style={type.small}>Where are you going?</Text>
+        <TextInput
+          value={destination}
+          onChangeText={setDestination}
+          placeholder="To the Library"
+          placeholderTextColor={colors.inkFaint}
+          maxLength={120}
+          style={styles.dest}
+          accessibilityLabel="Destination"
+        />
+      </FadeIn>
+      <FadeIn index={1}>
+        <Text style={[type.small, { marginTop: space.lg }]}>Tell my circle if I'm not there in</Text>
+        <Row style={{ justifyContent: "space-between", marginTop: 4 }}>
+          <Row style={{ alignItems: "baseline", gap: 6 }}>
+            <Text style={styles.minutes}>{minutes}</Text>
+            <Text style={[type.bodySoft, { fontSize: 16 }]}>min</Text>
+          </Row>
+          <Row style={{ gap: 8 }}>
+            <Pressy onPress={() => setMinutes((m) => Math.max(2, m - 1))} accessibilityLabel="Less time" scaleTo={0.9}>
+              <View style={styles.step}><Icon name="remove" size={20} /></View>
+            </Pressy>
+            <Pressy onPress={() => setMinutes((m) => Math.min(60, m + 1))} accessibilityLabel="More time" scaleTo={0.9}>
+              <View style={styles.step}><Icon name="add" size={20} /></View>
+            </Pressy>
+          </Row>
+        </Row>
+        <ChipRow>
+          {TIMERS.map((m) => (
+            <Chip key={m} label={`${m} min`} selected={minutes === m} onPress={() => setMinutes(m)} />
+          ))}
+        </ChipRow>
       </FadeIn>
       <FadeIn index={2}>
-        <Bubble>
-          <Text style={type.cardTitle}>Rather not walk alone?</Text>
-          <Text style={[type.bodySoft, { marginTop: 4 }]}>Find a verified student heading the same way.</Text>
-          <Button label="Walk together" iconRight="arrow-forward" variant="outline" size="sm" onPress={() => router.push("/buddy")} style={{ alignSelf: "flex-start", marginTop: space.sm }} />
-        </Bubble>
+        <Card style={{ padding: 20 }}>
+          <ArtemisLabel text="Artemis briefing" note={briefing ? briefing.source : undefined} />
+          {briefing ? (
+            briefing.tips.map((t, i) => (
+              <View key={i} style={styles.tipRow}>
+                <Text style={styles.tipNum}>{String(i + 1).padStart(2, "0")}</Text>
+                <Text style={[type.body, { flex: 1 }]}>{t}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={[type.bodySoft, { marginTop: 12 }]}>{loadingBrief ? "Reading your route, the time and help nearby…" : "No briefing right now. You can still start your walk."}</Text>
+          )}
+        </Card>
+      </FadeIn>
+      <FadeIn index={3}>
+        <Row style={{ justifyContent: "space-between", marginTop: space.xs }}>
+          <Row style={{ gap: 10 }}>
+            <View style={{ flexDirection: "row" }}>
+              {(me?.contacts ?? []).slice(0, 3).map((c, i) => (
+                <View key={c.id} style={{ marginLeft: i ? -8 : 0 }}>
+                  <Avatar name={c.name} index={i} size={30} />
+                </View>
+              ))}
+            </View>
+            <Text style={type.small}>{me?.contacts[0] ? `${me.contacts[0].name} is told first` : "Add your circle first"}</Text>
+          </Row>
+          <Pressable onPress={() => router.push("/buddy")} hitSlop={10} accessibilityRole="button">
+            <Text style={[type.small, { textDecorationLine: "underline" }]}>Walk with someone</Text>
+          </Pressable>
+        </Row>
       </FadeIn>
     </Screen>
   );
@@ -224,13 +277,18 @@ const styles = StyleSheet.create({
     bottom: 0,
     paddingHorizontal: space.lg,
     paddingTop: space.sm,
-    paddingBottom: space.sm,
-    experimental_backgroundImage: "linear-gradient(180deg, rgba(253,245,248,0) 0%, rgba(253,245,248,0.96) 30%)",
+    paddingBottom: 110,
+    experimental_backgroundImage: "linear-gradient(180deg, rgba(247,244,243,0) 0%, rgba(247,244,243,0.96) 25%)",
   },
+  dest: { fontFamily: fonts.serif, fontSize: 44, lineHeight: 50, color: colors.ink, paddingVertical: 4, letterSpacing: -0.8 },
+  minutes: { fontFamily: fonts.serif, fontSize: 88, lineHeight: 92, color: colors.ink, letterSpacing: -2 },
+  step: { width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: "rgba(23,20,26,0.12)", alignItems: "center", justifyContent: "center" },
+  tipRow: { flexDirection: "row", gap: 10, marginTop: 14 },
+  tipNum: { fontFamily: fonts.sans, fontSize: 12, color: colors.inkFaint, width: 20, paddingTop: 3 },
   timerCard: { padding: space.lg, marginTop: space.xs, marginBottom: space.sm },
-  countdown: { fontFamily: fonts.serifBold, fontSize: 64, lineHeight: 76, color: colors.ink, marginTop: space.sm, letterSpacing: -1 },
+  countdown: { fontFamily: fonts.serif, fontSize: 88, lineHeight: 96, color: colors.ink, marginTop: space.sm, letterSpacing: -1 },
   track: { height: 6, borderRadius: 3, backgroundColor: "rgba(26,23,28,0.08)", overflow: "hidden" },
-  fill: { height: 6, borderRadius: 3, backgroundColor: colors.magenta, experimental_backgroundImage: "linear-gradient(90deg, #F09BB9 0%, #C92A66 100%)" },
+  fill: { height: 6, borderRadius: 3, backgroundColor: colors.ink },
   note: { gap: 8, alignItems: "flex-start", backgroundColor: colors.magentaWash, borderRadius: radius.sm, padding: space.sm, marginBottom: space.md },
   doneOrb: { width: 92, height: 92, borderRadius: 46, backgroundColor: colors.safeWash, alignItems: "center", justifyContent: "center", borderWidth: 4, borderColor: colors.white },
 });

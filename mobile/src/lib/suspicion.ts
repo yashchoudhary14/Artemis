@@ -7,7 +7,7 @@ import { insideZoneStore } from "./zones";
 // "I feel uneasy" mode: on-device keyword listening. Runs only BEFORE a trigger; on a keyword
 // it stops completely so the audio recorder can take the microphone (no mic conflict).
 
-// The speech module only exists in the SafeWalk dev/preview build. In Expo Go (e.g. on an
+// The speech module only exists in the Artemis dev/preview build. In Expo Go (e.g. on an
 // iPhone) importing it throws at startup, so load it lazily and degrade gracefully.
 let Speech: typeof SpeechModule | null = null;
 try {
@@ -17,7 +17,7 @@ try {
   Speech = null;
 }
 export const speechAvailable = () => Speech != null;
-const NO_SPEECH = "Keyword listening needs the SafeWalk app build (it isn't available in Expo Go). Location sharing still works.";
+const NO_SPEECH = "Keyword listening needs the Artemis app build (it isn't available in Expo Go). Location sharing still works.";
 
 export type Lang = "hi-IN" | "en-IN";
 

@@ -96,6 +96,66 @@ export function Icon({ name, size = 20, color = colors.ink, style }: { name: Ico
   return <Ionicons name={name} size={size} color={color} style={style} accessibilityElementsHidden importantForAccessibility="no" />;
 }
 
+// ---------- Artemis mark ----------
+
+/** Thin crescent moon: a circle with only its left border drawn, which tapers at the tips. */
+export function Crescent({ size = 22, color = colors.ink }: { size?: number; color?: string }) {
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no"
+      style={{ width: size, height: size, borderRadius: size / 2, borderLeftWidth: size * 0.3, borderColor: color, transform: [{ rotate: "-18deg" }] }}
+    />
+  );
+}
+
+/** Crescent + ARTEMIS in carved capitals. */
+export function Wordmark({ onPress }: { onPress?: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="header" accessibilityLabel="Artemis" style={{ flexDirection: "row", alignItems: "center", gap: 9 }}>
+      <Crescent size={20} />
+      <Text style={type.mark}>ARTEMIS</Text>
+    </Pressable>
+  );
+}
+
+/** Small rose label for anything Artemis (the AI) wrote: crescent + text, optional right note. */
+export function ArtemisLabel({ text, note, light }: { text: string; note?: string; light?: boolean }) {
+  const c = light ? "#F2C6D3" : colors.magenta;
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+        <Crescent size={11} color={c} />
+        <Text style={[type.accent, { color: light ? "rgba(255,255,255,0.75)" : c }]}>{text}</Text>
+      </View>
+      {note ? <Text style={[type.small, { fontSize: 11, color: light ? "rgba(255,255,255,0.5)" : colors.inkFaint }]}>{note}</Text> : null}
+    </View>
+  );
+}
+
+/** Feature tile from the Home grid: tinted icon disc on top, label at the bottom. */
+export function Tile({ icon, label, tint, color, onPress }: { icon: IconName; label: string; tint: string; color: string; onPress?: () => void }) {
+  return (
+    <Pressy onPress={onPress} accessibilityLabel={label} style={{ flex: 1 }}>
+      <View style={styles.tile}>
+        <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: tint, alignItems: "center", justifyContent: "center" }}>
+          <Icon name={icon} size={17} color={color} />
+        </View>
+        <Text style={[type.label, { fontFamily: fonts.sans, fontSize: 14, lineHeight: 17 }]}>{label}</Text>
+      </View>
+    </Pressy>
+  );
+}
+
+/** Round outlined arrow used on number cards. */
+export function ArrowDisc({ dark }: { dark?: boolean }) {
+  return (
+    <View style={{ width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: dark ? "transparent" : "rgba(23,20,26,0.12)", backgroundColor: dark ? colors.white : "transparent", alignItems: "center", justifyContent: "center" }}>
+      <Icon name="arrow-up" size={13} color={colors.ink} style={{ transform: [{ rotate: "45deg" }] }} />
+    </View>
+  );
+}
+
 // ---------- layout ----------
 
 /** Page with the pink wash. `header` stays fixed; content scrolls under it. */
@@ -177,7 +237,7 @@ export function BrandHandle({ name, onPress }: { name: string; onPress?: () => v
 /** Big centered serif statement + magenta accent line. */
 export function Hero({ title, accent, accentIcon, style }: { title: string; accent?: string; accentIcon?: IconName; style?: StyleProp<ViewStyle> }) {
   return (
-    <View style={[{ alignItems: "center", paddingHorizontal: space.sm, marginTop: space.md, marginBottom: space.xl }, style]}>
+    <View style={[{ alignItems: "flex-start", marginTop: space.md, marginBottom: space.xl }, style]}>
       <Text style={type.hero}>{title}</Text>
       {accent ? (
         <View style={[styles.accentRow, { marginTop: space.sm }]}>
@@ -192,7 +252,7 @@ export function Hero({ title, accent, accentIcon, style }: { title: string; acce
 export function SectionTitle({ title, icon, onIcon, action, onAction }: { title: string; icon?: IconName; onIcon?: () => void; action?: string; onAction?: () => void }) {
   return (
     <View style={styles.sectionRow}>
-      <Text style={type.section}>{title}</Text>
+      <Text style={type.section}>{title.toUpperCase()}</Text>
       {icon ? <HeaderIcon icon={icon} label={title} onPress={onIcon} size={18} color={colors.inkSoft} /> : null}
       {action ? (
         <Pressable onPress={onAction} hitSlop={10} accessibilityRole="button">
@@ -409,11 +469,11 @@ export function UnderlineTabs<T extends string>({ tabs, value, onChange }: { tab
 }
 
 const AVATAR_TINTS = [
-  "linear-gradient(140deg, #F9C9D9 0%, #E89BB6 100%)",
-  "linear-gradient(140deg, #E2D8FA 0%, #B7A2EE 100%)",
-  "linear-gradient(140deg, #FFE0CC 0%, #F4B38E 100%)",
-  "linear-gradient(140deg, #D5ECFA 0%, #98C5EA 100%)",
-  "linear-gradient(140deg, #DCF2E2 0%, #9DD5B2 100%)",
+  ["#EADCE0", "#5A4950"],
+  ["#E3E0EC", "#4E4A5E"],
+  ["#ECE5DC", "#5E5446"],
+  ["#DFE8EC", "#3F5560"],
+  ["#E3ECE4", "#3F5A47"],
 ];
 
 /** Round or rounded-square avatar; uses a photo when given, else a serif initial on a soft gradient. */
@@ -429,13 +489,12 @@ export function Avatar({ name, index = 0, size = 44, square, photo, onPress, rin
         borderRadius: r,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#F2B8CB",
-        experimental_backgroundImage: AVATAR_TINTS[index % AVATAR_TINTS.length],
-        borderWidth: square ? 3 : 2,
+        backgroundColor: AVATAR_TINTS[index % AVATAR_TINTS.length][0],
+        borderWidth: square ? 0 : 2,
         borderColor: colors.white,
       }}
     >
-      <Text style={{ fontFamily: fonts.serifBold, fontSize: size * 0.38, color: "#3B2232" }}>{name.trim().charAt(0).toUpperCase()}</Text>
+      <Text style={{ fontFamily: square ? fonts.serif : fonts.sansMedium, fontSize: size * (square ? 0.46 : 0.36), color: AVATAR_TINTS[index % AVATAR_TINTS.length][1] }}>{name.trim().charAt(0).toUpperCase()}</Text>
     </View>
   );
   const wrapped = ring ? <View style={{ padding: 2, borderRadius: r + 4, borderWidth: 1.5, borderColor: colors.magenta }}>{body}</View> : body;
@@ -636,6 +695,15 @@ const styles = StyleSheet.create({
   handle: { flexDirection: "row", alignItems: "center", gap: 4, paddingLeft: 6, maxWidth: 140 },
   accentRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 2 },
   sectionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: space.lg, marginBottom: space.sm },
+  tile: {
+    height: 112,
+    padding: 14,
+    borderRadius: 22,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.bubbleBorder,
+    justifyContent: "space-between",
+  },
   card: {
     backgroundColor: colors.bubble,
     borderRadius: radius.lg,

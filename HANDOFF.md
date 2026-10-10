@@ -19,6 +19,8 @@ _What works right now, and how it was tested._
 - **Dev build #3 FINISHED** (adds `react-native-volume-manager` for the full-volume SOS siren). APK: https://expo.dev/artifacts/eas/7MnCcsZrWP5mCZw-O0OjiVuzw1QL9TV-LlW-vKa1zQ0.apk (build page: https://expo.dev/accounts/astra-yages/projects/mobile/builds/e50ce4a4-31f5-4af1-80f6-33f4021113a5). Install it on the demo phones. Build #2 still runs everything except forcing the volume to max.
 - EAS project: `@astra-yages/mobile` (id `5c776287-b32b-4b81-9421-02967a77935a`). Android package `com.safewalk.app`. Dev build #2 APK: https://expo.dev/artifacts/eas/kf7f558I2teZ6wesg_W6sIlb1z9UU6nZBNpa6DjUPVU.apk
 
+- **Artemis redesign + 2 new Cline features (10 Oct, later):** app renamed Artemis. Light "Artemis" design system (warm off-white, faint blush, black pill CTAs, Instrument Serif display, Geist UI, Marcellus wordmark, crescent mark). Floating tab bar Home · Walk · SOS (raised, centre) · Map · Help; Rise reached from Home. New screens: Map tab (opens wide, camera flies to your location), welcome splash, incident report. Home shows all features as tiles. New server endpoints (read-only Cline agent + plain-code fallback): `POST /briefing` (3 walk tips from time/sunset + Google Places) and `GET /sessions/:id/report` (incident report from session record + transcripts). Tested: server tsc clean, both endpoints answered (fallback path, no keys in the test box); mobile tsc clean, Android bundle exports. Not yet on a phone. Fonts are JS-only packages (no new native build needed).
+
 ## In progress
 _Exactly where the last session stopped._
 
