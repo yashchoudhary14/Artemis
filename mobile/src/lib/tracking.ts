@@ -83,7 +83,7 @@ export async function startTracking(ms: number = WALK_INTERVAL_MS): Promise<{ ba
       pausesUpdatesAutomatically: false,
       foregroundService: {
         // Neutral wording: the same notification for every kind of session.
-        notificationTitle: "SafeWalk",
+        notificationTitle: "Artemis",
         notificationBody: "Your circle can see your walk.",
         notificationColor: "#8B5CF6",
         killServiceOnDestroy: false,

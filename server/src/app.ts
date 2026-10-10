@@ -8,6 +8,7 @@ import { z } from "zod";
 import { setLogger } from "./log.js";
 import "./buddy/db.js";
 import { buddyRoutes } from "./buddy/routes.js";
+import { companionRoutes } from "./routes/companion.js";
 import { audioRoutes } from "./routes/audio.js";
 import { guardianRoutes } from "./routes/guardian.js";
 import { helpRoutes } from "./routes/help.js";
@@ -39,6 +40,7 @@ export async function buildApp() {
   await app.register(helpRoutes);
   await app.register(guardianRoutes);
   await app.register(buddyRoutes);
+  await app.register(companionRoutes);
 
   return app;
 }

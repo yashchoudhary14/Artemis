@@ -125,7 +125,7 @@ export default function Uneasy() {
         bottomInset={110}
       >
         <FadeIn>
-          <Hero title="Speak naturally. I'm listening for your words." style={{ marginBottom: space.sm }} />
+          <Hero title="I'm listening." accent="Say a help word and your circle hears at once" style={{ marginBottom: space.sm }} />
         </FadeIn>
         <FadeIn index={1} style={{ alignItems: "center" }}>
           <View style={styles.micRow}>
@@ -186,7 +186,7 @@ export default function Uneasy() {
   return (
     <Screen header={<Header title="I feel uneasy" accent={`I'll stay with you for ${SUSPICION_MINUTES} min`} left={back} />} bottomInset={40}>
       <FadeIn>
-        <Hero title="Say a safety word and your circle hears from me at once." />
+        <Hero title="I feel uneasy." accent="Say a help word and your circle is alerted at once. Nothing is recorded unless that happens." />
       </FadeIn>
       <FadeIn index={1}>
         <Card>
