@@ -31,9 +31,14 @@ $hostName = ([Uri]$url).Host
 # Expo CLI builds every manifest/bundle URL from this, so phones load everything through the tunnel.
 $env:EXPO_PACKAGER_PROXY_URL = $url
 
+$deepLink = "exp+mobile://expo-development-client/?url=" + [Uri]::EscapeDataString($url)
 Write-Host ""
-Write-Host "  Android (SafeWalk app) -> scan the QR below with the phone camera," -ForegroundColor Green
-Write-Host "                            or open SafeWalk and enter:  $url" -ForegroundColor Green
+Write-Host "  ANDROID - open it INSIDE the Artemis/SafeWalk app (not Chrome):" -ForegroundColor Green
+Write-Host "    1) Scan the QR below with the phone camera  -> it opens the app" -ForegroundColor Green
+Write-Host "    2) or in the app: 'Enter URL manually' ->  $url" -ForegroundColor Green
+Write-Host "    3) or tap this link on the phone (send it to yourself):" -ForegroundColor Green
+Write-Host "       $deepLink" -ForegroundColor Green
+Write-Host "  Typing the https address into a web browser will NOT work (the app is not a website)." -ForegroundColor Yellow
 Write-Host "  (iPhone via Expo Go: run  npm run phone -- -Go  instead)" -ForegroundColor DarkGray
 Write-Host ""
 try {

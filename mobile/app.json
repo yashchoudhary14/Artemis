@@ -2,6 +2,7 @@
   "expo": {
     "name": "Artemis",
     "slug": "mobile",
+    "platforms": ["android", "ios"],
     "scheme": "safewalk",
     "version": "1.0.0",
     "orientation": "portrait",
