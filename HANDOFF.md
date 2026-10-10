@@ -53,6 +53,8 @@ _In order._
 - Maps: native `react-native-maps` (Google) for smooth safe-zone drawing.
 - Demo location: Guwahati, Assam. Medical fast-dial: 108 in Assam, 112 elsewhere.
 - UI: **hybrid**. Take the layout and screens from `UI_reference/general app UI/design 2` (Artemis: Home with "Start a walk" / "I feel uneasy" / circle avatars / centre SOS tab, Private zones with radius slider, "Stay with me" with alert timeline), and use the **light pink/lilac palette** from `design 1` (soft gradients, serif headlines, white frosted cards, dark pill buttons). Maps follow the Life360 references (`maps reference/`); the buddy screen follows the radar reference (`find a buddy/`). The `.mp4` files couldn't be viewed by the agent.
+  - **Primary mock:** `design 2/WhatsApp Image 2026-10-10 at 2.45.09 PM.jpeg` is exactly this hybrid (Home: "Your circle", "A little company?" buddy card, "I feel uneasy", "Private zones", "Help, when you need it"; Private zones: map circle + "Your space stays yours" sheet with radius slider; Walk together: buddy radar + departures list). Tabs: Home / Walk / SOS (centre, coral) / Help / Rise. Build to this.
+  - `2.45.53 PM.jpeg` (pink login/register/profile) is only a style hint. Phase 1 has no login screen: the user enters a name in Settings and gets a server token.
 
 ## How to run
 
@@ -117,7 +119,7 @@ Use these to build `data/helplines.json`. Fields: number, purpose, coverage, sou
 
 ## Last commit
 
-- Hash: `2f99448` (plus this HANDOFF-only commit on top; run `git log -1` for the exact latest)
-- Message: README fresh-laptop setup; server /health verified through cloudflared tunnel; HANDOFF updated
+- Hash: `826021d` (plus a HANDOFF-only commit on top; run `git log -1` for the exact latest)
+- Message: Phase 1 server: walk sessions, timer expiry + duress + 45s dead man's switch send fixed-template alerts (smoke test 20/20 pass); notify interface (telegram/console); Telegram contact linking
 - Pushed by / from which laptop: Yash's laptop (Windows)
 - Credits key in use: not recorded
