@@ -42,8 +42,10 @@ export function stopEscalation(sessionId: string, reason: string) {
   if (esc && !esc.done) finish(sessionId, reason);
 }
 
-async function sendToInner(session: SessionRow, text: string) {
-  await Promise.all(innerContacts(session.user_id).map((c) => notify({ name: c.name, telegramChatId: c.telegram_chat_id }, text)));
+async function sendToInner(session: SessionRow, text: string, kind = "escalation") {
+  await Promise.all(
+    innerContacts(session.user_id).map((c) => notify({ name: c.name, telegramChatId: c.telegram_chat_id }, text, { sessionId: session.id, kind })),
+  );
 }
 
 // Called after every first (template) alert.
@@ -97,6 +99,7 @@ export async function acknowledge(session: SessionRow, ackName: string) {
   await sendToInner(
     session,
     `SafeWalk update: ${ackName} pressed "I'm on it" for ${name} at ${formatTime(Date.now())}. Live link: ${guardianUrl(session)}`,
+    "update",
   );
 }
 
@@ -139,7 +142,7 @@ If the situation looks dangerous (duress PIN, safety word, SOS, worrying words h
   if (!outcome.state.sentTo.has(target.id)) {
     const name = userName(session.user_id);
     const text = `SafeWalk alert: ${name} may need help and no one has confirmed yet (${formatTime(Date.now())}). ${target.name}, please open the live link, try calling her, and press "I'm on it" if you are responding: ${guardianUrl(session)}`;
-    await notify({ name: target.name, telegramChatId: target.telegram_chat_id }, text);
+    await notify({ name: target.name, telegramChatId: target.telegram_chat_id }, text, { sessionId, kind: "escalation" });
     recordAgentEvent(sessionId, "fallback", "Sent the fixed escalation message (agent unavailable).", target.name);
   }
 
@@ -175,7 +178,7 @@ Then decide whether to call raise_alert_level.`,
   }
   const name = userName(session.user_id);
   const text = `SafeWalk update: ${name}'s phone is recording audio after the alert.${police} Live link: ${guardianUrl(session)}`;
-  await Promise.all(missing.map((c) => notify({ name: c.name, telegramChatId: c.telegram_chat_id }, text)));
+  await Promise.all(missing.map((c) => notify({ name: c.name, telegramChatId: c.telegram_chat_id }, text, { sessionId, kind: "ai" })));
   recordAgentEvent(sessionId, "fallback", "Sent the fixed follow-up (agent unavailable).", missing.map((c) => c.name).join(", "));
 }
 

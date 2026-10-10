@@ -1,32 +1,38 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from "react-native";
-import { Banner, Brand, Button, Card, FadeIn, Hero, Icon, IconCircle, Muted, Pressy, Row, Screen, SectionHeader, Segmented } from "@/components/ui";
+import {
+  Banner,
+  Bubble,
+  Button,
+  Card,
+  Chip,
+  ChipRow,
+  FadeIn,
+  Header,
+  HeaderIcon,
+  Hero,
+  Icon,
+  IconBubble,
+  ListItem,
+  Muted,
+  Row,
+  RoundIconButton,
+  Screen,
+  SectionTitle,
+} from "@/components/ui";
 import { api, type Place } from "@/lib/api";
 import { addressFor, currentPosition, stateFor } from "@/lib/geo";
 import { cachedHelplines, dial, fetchHelplines, medicalFastDial, type HelplineCache } from "@/lib/medical";
-import { colors, fonts, radius, shadows, space, type } from "@/theme";
+import { colors, fonts, gradients, radius, shadows, space, type } from "@/theme";
 
-function km(m: number) {
-  return m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1)} km`;
-}
-
+const km = (m: number) => (m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1)} km`);
 function host(url: string) {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
   } catch {
     return url;
   }
-}
-
-function CallButton({ onPress, label }: { onPress: () => void; label: string }) {
-  return (
-    <Pressy onPress={onPress} accessibilityLabel={label} scaleTo={0.9}>
-      <View style={styles.callBtn}>
-        <Icon name="call" size={18} color={colors.white} />
-      </View>
-    </Pressy>
-  );
 }
 
 export default function Help() {
@@ -47,7 +53,6 @@ export default function Help() {
     }
   }, [params.medical]);
 
-  // Location → state → helplines (cached for offline), address for the operator.
   useEffect(() => {
     void cachedHelplines().then((c) => c && setLines((cur) => cur ?? c));
     void (async () => {
@@ -90,123 +95,98 @@ export default function Help() {
   const ambulance = lines?.ambulanceNumber ?? "112";
 
   return (
-    <Screen>
+    <Screen header={<Header title="Help" accent="Verified numbers only" accentIcon="shield-checkmark-outline" right={<HeaderIcon icon="ellipsis-horizontal" label="Profile" onPress={() => router.push("/profile")} />} />}>
       <FadeIn>
-        <Brand />
-        <Hero title={"Help, when\n"} accent="you need it." subtitle={lines?.state ? `Verified numbers for ${lines.state} and all of India.` : "Verified numbers and help near you."} />
+        <Hero title="Help, when you need it." accent={lines?.state ? `Numbers for ${lines.state} and all of India` : undefined} />
       </FadeIn>
 
       <FadeIn index={1}>
-        <Card tone="sos" style={{ padding: space.xl }}>
-          <Row style={{ gap: space.md, alignItems: "flex-start" }}>
-            <IconCircle icon="medkit" tint="rgba(255,255,255,0.22)" color={colors.white} size={50} />
+        <View style={styles.medical}>
+          <Row style={{ gap: space.sm, alignItems: "flex-start" }}>
+            <IconBubble icon="medkit" tint="rgba(255,255,255,0.25)" color={colors.white} size={46} />
             <View style={{ flex: 1 }}>
-              <Text style={[type.title, { color: colors.white, fontSize: 24 }]}>Medical emergency</Text>
-              <Text style={[type.body, { color: "rgba(255,255,255,0.88)", marginTop: 4 }]}>
-                One tap calls {ambulance} and sends your location to your circle at the same moment.
-              </Text>
+              <Text style={[type.title, { color: colors.white, fontSize: 21 }]}>Medical emergency</Text>
+              <Text style={[type.body, { color: "rgba(255,255,255,0.9)", marginTop: 4 }]}>One tap calls {ambulance} and sends your location to your circle at the same moment.</Text>
             </View>
           </Row>
           <Button label={`Call ambulance · ${ambulance}`} icon="call" variant="light" size="lg" onPress={fastDial} style={{ marginTop: space.lg }} />
-        </Card>
+        </View>
       </FadeIn>
 
       {medicalMode ? (
         <FadeIn>
-          <Card>
-            <Row style={{ gap: 8, marginBottom: space.xs }}>
-              <Icon name="mic-outline" size={16} color={colors.violet} />
-              <Text style={[type.label, { color: colors.violet }]}>Read this to the operator</Text>
-            </Row>
+          <Bubble style={{ maxWidth: "100%" }}>
+            <Text style={type.accent}>Read this to the operator</Text>
             <Text style={styles.address}>{address ?? (pos ? `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}` : "Finding your location…")}</Text>
             {pos && address ? <Muted>GPS {pos.lat.toFixed(5)}, {pos.lng.toFixed(5)}</Muted> : null}
-            <View style={{ height: space.md }} />
-            {medicalMsg ? <Banner text={medicalMsg} tone={medicalMsg.startsWith("Couldn't") ? "amber" : "safe"} /> : null}
-            <Button label="Show my medical card" icon="heart-outline" variant="ghost" size="sm" onPress={() => router.push("/rise")} />
-          </Card>
+            {medicalMsg ? <View style={{ marginTop: space.sm }}><Banner text={medicalMsg} tone={medicalMsg.startsWith("Couldn't") ? "amber" : "safe"} /></View> : null}
+            <Button label="Show my medical card" icon="heart-outline" variant="outline" size="sm" onPress={() => router.push("/profile")} style={{ alignSelf: "flex-start" }} />
+          </Bubble>
         </FadeIn>
       ) : null}
 
       <FadeIn index={2}>
-        <SectionHeader title="Nearby" />
-        <Segmented
-          value={placeType}
-          onChange={setPlaceType}
-          options={[
-            { value: "hospital", label: "Hospitals", icon: "medical" },
-            { value: "police", label: "Police", icon: "shield" },
-          ]}
-        />
-        <Card padded={false} style={{ paddingHorizontal: space.lg, paddingVertical: space.xs }}>
-          {!pos ? <Muted style={{ paddingVertical: space.lg }}>Turn on location to see places near you.</Muted> : null}
-          {pos && places === null ? <ActivityIndicator color={colors.violet} style={{ paddingVertical: space.xl }} /> : null}
-          {placesError ? (
-            <View style={{ paddingTop: space.md }}>
-              <Banner text={placesError} tone="amber" />
-            </View>
-          ) : null}
-          {places?.length === 0 && !placesError ? <Muted style={{ paddingVertical: space.lg }}>Nothing found nearby.</Muted> : null}
+        <SectionTitle title="Nearby" icon="locate-outline" onIcon={() => void loadPlaces()} />
+        <ChipRow>
+          <Chip icon="medical-outline" label="Hospitals" selected={placeType === "hospital"} onPress={() => setPlaceType("hospital")} />
+          <Chip icon="shield-outline" label="Police stations" selected={placeType === "police"} onPress={() => setPlaceType("police")} />
+        </ChipRow>
+        <Card style={{ paddingVertical: space.xs }}>
+          {!pos ? <Muted style={{ paddingVertical: space.md }}>Turn on location to see places near you.</Muted> : null}
+          {pos && places === null ? <ActivityIndicator color={colors.magenta} style={{ paddingVertical: space.lg }} /> : null}
+          {placesError ? <Banner text={placesError} tone="amber" /> : null}
+          {places?.length === 0 && !placesError ? <Muted style={{ paddingVertical: space.md }}>Nothing found nearby.</Muted> : null}
           {places?.map((p, i) => (
-            <View key={`${p.name}${i}`} style={[styles.row, i < places.length - 1 && styles.divider]}>
-              <IconCircle
-                icon={placeType === "hospital" ? "medical" : "shield"}
-                tint={placeType === "hospital" ? colors.roseWash : colors.violetWash}
-                color={placeType === "hospital" ? colors.rose : colors.violet}
-                size={42}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={type.h3} numberOfLines={2}>
-                  {p.name}
-                </Text>
-                <Text style={type.small} numberOfLines={1}>
-                  <Text style={{ fontFamily: fonts.sansBold, color: colors.ink }}>{km(p.distanceM)}</Text>
-                  {p.address ? ` · ${p.address}` : ""}
-                </Text>
-              </View>
-              {p.phone ? (
-                <CallButton onPress={() => dial(p.phone!.replace(/\s/g, ""))} label={`Call ${p.name}`} />
-              ) : (
-                <Pressy onPress={() => Linking.openURL(p.mapsUrl)} accessibilityLabel={`Open ${p.name} in Maps`} scaleTo={0.9}>
-                  <View style={styles.mapBtn}>
-                    <Icon name="navigate" size={18} color={colors.violet} />
-                  </View>
-                </Pressy>
-              )}
-            </View>
+            <ListItem
+              key={`${p.name}${i}`}
+              icon={placeType === "hospital" ? "medical" : "shield"}
+              iconTint={placeType === "hospital" ? colors.sosWash : colors.lilacWash}
+              iconColor={placeType === "hospital" ? colors.sos : colors.lilac}
+              title={p.name}
+              subtitle={`${km(p.distanceM)}${p.address ? ` · ${p.address}` : ""}`}
+              last={i === places.length - 1}
+              right={
+                p.phone ? (
+                  <RoundIconButton icon="call" label={`Call ${p.name}`} onPress={() => dial(p.phone!.replace(/\s/g, ""))} size={40} />
+                ) : (
+                  <RoundIconButton icon="navigate" label={`Open ${p.name} in Maps`} tone="light" onPress={() => Linking.openURL(p.mapsUrl)} size={40} />
+                )
+              }
+            />
           ))}
           {places?.length ? (
-            <Row style={styles.source}>
-              <Icon name="logo-google" size={12} color={colors.inkSoft} />
-              <Text style={[type.small, { fontSize: 12 }]}>Source: Google Maps</Text>
+            <Row style={{ justifyContent: "flex-end", gap: 5, paddingBottom: space.xs }}>
+              <Icon name="logo-google" size={11} color={colors.inkSoft} />
+              <Text style={[type.small, { fontSize: 11 }]}>Source: Google Maps</Text>
             </Row>
           ) : null}
         </Card>
       </FadeIn>
 
       <FadeIn index={3}>
-        <SectionHeader title="Helplines" />
-        {!lines ? <ActivityIndicator color={colors.violet} /> : null}
+        <SectionTitle title="Helplines" />
+        {!lines ? <ActivityIndicator color={colors.magenta} /> : null}
         {lines?.helplines.map((h) => (
-          <Card key={h.number} style={{ paddingVertical: space.md }}>
+          <Card key={h.number} style={{ paddingVertical: space.sm }}>
             <Row style={{ gap: space.md }}>
-              <View style={styles.numPill}>
-                <Text style={styles.num}>{h.number}</Text>
+              <View style={styles.num}>
+                <Text style={styles.numText}>{h.number}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={type.h3}>{h.purpose}</Text>
-                <Pressable onPress={() => Linking.openURL(h.sourceUrl)} hitSlop={8}>
-                  <Text style={[type.small, { fontSize: 12, marginTop: 2 }]}>
-                    {h.coverage} · {host(h.sourceUrl)} <Icon name="open-outline" size={11} color={colors.inkSoft} />
+                <Text style={[type.cardTitle, { fontSize: 14.5 }]}>{h.purpose}</Text>
+                <Pressable onPress={() => Linking.openURL(h.sourceUrl)} hitSlop={8} accessibilityRole="link">
+                  <Text style={[type.small, { fontSize: 11.5, marginTop: 2 }]}>
+                    {h.coverage} · {host(h.sourceUrl)} ↗
                   </Text>
                 </Pressable>
               </View>
-              <CallButton onPress={() => dial(h.number)} label={`Call ${h.number}`} />
+              <RoundIconButton icon="call" label={`Call ${h.number}`} onPress={() => dial(h.number)} size={40} />
             </Row>
           </Card>
         ))}
         <Row style={{ justifyContent: "center", gap: 6, marginTop: space.xs }}>
           <Icon name="checkmark-done" size={14} color={colors.safe} />
-          <Text style={[type.small, { fontSize: 12 }]}>Every number comes from an official government page.</Text>
+          <Text style={[type.small, { fontSize: 11.5 }]}>Every number comes from an official government page.</Text>
         </Row>
       </FadeIn>
     </Screen>
@@ -214,12 +194,15 @@ export default function Help() {
 }
 
 const styles = StyleSheet.create({
-  address: { fontFamily: fonts.display, fontSize: 26, lineHeight: 34, color: colors.ink, marginVertical: space.xs },
-  row: { flexDirection: "row", alignItems: "center", gap: space.sm, paddingVertical: 14 },
-  divider: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
-  callBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center", boxShadow: shadows.dark },
-  mapBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.violetWash, alignItems: "center", justifyContent: "center" },
-  numPill: { minWidth: 70, paddingHorizontal: 10, height: 48, borderRadius: radius.sm, backgroundColor: colors.violetWash, alignItems: "center", justifyContent: "center" },
-  num: { fontFamily: fonts.sansExtra, fontSize: 19, color: colors.violet, letterSpacing: 0.3 },
-  source: { justifyContent: "flex-end", gap: 5, paddingVertical: space.sm },
+  medical: {
+    borderRadius: radius.lg,
+    padding: space.lg,
+    marginBottom: space.md,
+    backgroundColor: colors.sos,
+    experimental_backgroundImage: gradients.sos,
+    boxShadow: shadows.sos,
+  },
+  address: { fontFamily: fonts.serifBold, fontSize: 24, lineHeight: 33, color: colors.ink, marginVertical: space.xs },
+  num: { minWidth: 64, height: 46, paddingHorizontal: 8, borderRadius: 14, backgroundColor: colors.magentaWash, alignItems: "center", justifyContent: "center" },
+  numText: { fontFamily: fonts.serifBold, fontSize: 18, color: colors.magenta },
 });

@@ -103,16 +103,21 @@ export function guardianJson(session: SessionRow) {
 // The phone's own view. A duress session must look exactly like a cancelled one (rule 7).
 export function sessionStatusJson(session: SessionRow) {
   if (session.status === "duress") {
-    return { status: "ended", kind: session.kind, alerts: [], acks: [], escalation: null, agent: [], audioChunks: 0 };
+    return { status: "ended", kind: session.kind, alerts: [], acks: [], escalation: null, agent: [], deliveries: [], audioChunks: 0 };
   }
   const audioChunks = getOne<{ n: number }>("SELECT COUNT(*) AS n FROM audio_chunks WHERE session_id = ?", session.id)!.n;
+  const deliveries = getAll<{ contact_name: string; kind: string; ok: number; error: string | null; at: number }>(
+    "SELECT contact_name, kind, ok, error, at FROM deliveries WHERE session_id = ? ORDER BY id",
+    session.id,
+  ).map((d) => ({ name: d.contact_name, kind: d.kind, ok: Boolean(d.ok), error: d.error, at: d.at }));
   return {
     status: session.status,
     kind: session.kind,
-    alerts: alertsOf(session.id).map((a) => ({ type: a.type, at: a.at })),
+    alerts: alertsOf(session.id).map((a) => ({ type: a.type, at: a.at, message: a.message })),
     acks: acksOf(session.id),
     escalation: escalationOf(session.id),
     agent: agentOf(session.id).filter((a) => ["message", "summary", "fallback", "level", "done"].includes(a.kind)),
+    deliveries,
     audioChunks,
   };
 }

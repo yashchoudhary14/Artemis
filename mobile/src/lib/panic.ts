@@ -1,5 +1,6 @@
 import { Directory, File, Paths } from "expo-file-system";
 import { Vibration } from "react-native";
+import { startAlarm, stopAlarm } from "./alarm";
 import { api, uploadAudioChunk } from "./api";
 import { snapshot } from "./geo";
 import { saveActive, sessionStore } from "./session";
@@ -61,6 +62,8 @@ export async function restorePanic() {
 export async function startPanic(reason: "sos" | "keyword", info: { keyword?: string; snippets?: string[] } = {}) {
   if (panicStore.get().active) return;
   Vibration.vibrate([0, 120, 80, 120]);
+  // SOS button: loud siren so people nearby notice. Keyword triggers stay silent (no escalation risk).
+  if (reason === "sos") void startAlarm();
   update({
     ...IDLE,
     active: true,
@@ -108,6 +111,7 @@ async function sendAlert(snippets: string[] = []) {
 
 // Stops recording on this phone. Ending the server session is done by endWithPin().
 export function stopPanicLocal() {
+  void stopAlarm();
   if (!panicStore.get().active) return;
   update({ active: false });
 }

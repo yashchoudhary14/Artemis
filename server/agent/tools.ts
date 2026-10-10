@@ -76,7 +76,7 @@ export function buildTools(sessionId: string, state: RunState): AgentTool<any>[]
         );
       }
       const full = `SafeWalk: ${body}${aiFooter(s)}`;
-      const ok = await notify({ name: contact.name, telegramChatId: contact.telegram_chat_id }, full);
+      const ok = await notify({ name: contact.name, telegramChatId: contact.telegram_chat_id }, full, { sessionId: s.id, kind: "ai" });
       state.sentTo.add(contact.id);
       recordAgentEvent(s.id, state.kind, body, contact.name);
       return { sent: ok, to: contact.name };

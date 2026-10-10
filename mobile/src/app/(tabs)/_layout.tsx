@@ -6,23 +6,18 @@ import { panicStore } from "@/lib/panic";
 import { useStore } from "@/lib/store";
 import { colors, fonts, gradients, shadows } from "@/theme";
 
-// Floating glass tab bar: Home / Walk / SOS (raised coral orb) / Help / Rise.
+// Bottom bar like the reference: plain white, thin outline icons, small serif labels.
 function TabIcon({ name, focused }: { name: IconName; focused: boolean }) {
-  return (
-    <View style={[styles.iconWrap, focused && styles.iconOn]}>
-      <Icon name={(focused ? name.replace("-outline", "") : name) as IconName} size={21} color={focused ? colors.violet : colors.inkFaint} />
-    </View>
-  );
+  return <Icon name={(focused ? name.replace("-outline", "") : name) as IconName} size={22} color={focused ? colors.ink : colors.inkFaint} />;
 }
 
-function SosButton({ onPress }: { onPress?: (...args: any[]) => void }) {
+function SosTab({ onPress }: { onPress?: (...args: any[]) => void }) {
   const panic = useStore(panicStore).active;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel="SOS" onPress={onPress} style={styles.sosWrap}>
-      <View style={styles.sosHalo}>
-        <PulseRings size={64} color={colors.sos} active={panic} />
+      <View style={styles.sosOrb}>
+        <PulseRings size={50} color={colors.sos} active={panic} />
         <View style={styles.sos}>
-          <Icon name="call" size={18} color={colors.white} />
           <Text style={styles.sosText}>SOS</Text>
         </View>
       </View>
@@ -36,23 +31,20 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.violet,
+        tabBarActiveTintColor: colors.ink,
         tabBarInactiveTintColor: colors.inkFaint,
-        tabBarStyle: [styles.bar, { bottom: Math.max(insets.bottom, 10) + 6 }],
-        tabBarItemStyle: { paddingTop: 8 },
-        tabBarLabelStyle: { fontFamily: fonts.sansSemi, fontSize: 11, marginTop: 2 },
+        tabBarStyle: [styles.bar, { height: 64 + insets.bottom, paddingBottom: insets.bottom + 6 }],
+        tabBarLabelStyle: { fontFamily: fonts.serif, fontSize: 11 },
         sceneStyle: { backgroundColor: colors.bg },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "Home", tabBarIcon: ({ focused }) => <TabIcon name="home-outline" focused={focused} /> }} />
-      <Tabs.Screen name="walk" options={{ title: "Walk", tabBarIcon: ({ focused }) => <TabIcon name="walk-outline" focused={focused} /> }} />
+      <Tabs.Screen name="index" options={{ title: "Home", tabBarIcon: ({ focused }) => <TabIcon name="compass-outline" focused={focused} /> }} />
+      <Tabs.Screen name="walk" options={{ title: "Walk", tabBarIcon: ({ focused }) => <TabIcon name="footsteps-outline" focused={focused} /> }} />
       <Tabs.Screen
         name="sos"
         options={{
-          title: "",
-          tabBarLabel: () => null,
-          tabBarIcon: () => null,
-          tabBarButton: (props) => <SosButton onPress={props.onPress ?? undefined} />,
+          title: "SOS",
+          tabBarButton: (props) => <SosTab onPress={props.onPress ?? undefined} />,
         }}
       />
       <Tabs.Screen name="help" options={{ title: "Help", tabBarIcon: ({ focused }) => <TabIcon name="medkit-outline" focused={focused} /> }} />
@@ -63,39 +55,25 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   bar: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    height: 74,
-    borderRadius: 30,
-    borderTopWidth: 0,
-    backgroundColor: "rgba(255,255,255,0.95)",
-    boxShadow: shadows.lifted,
+    paddingTop: 6,
+    backgroundColor: "rgba(253,248,250,0.97)",
+    borderTopWidth: 1,
+    borderTopColor: colors.hairline,
     elevation: 0,
-    paddingBottom: 8,
   },
-  iconWrap: { width: 46, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  iconOn: { backgroundColor: colors.violetWash },
-  sosWrap: { flex: 1, alignItems: "center" },
-  sosHalo: {
-    marginTop: -26,
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.95)",
-    boxShadow: shadows.soft,
-  },
+  sosWrap: { flex: 1, alignItems: "center", justifyContent: "flex-start", paddingTop: 2 },
+  sosOrb: { width: 54, height: 54, alignItems: "center", justifyContent: "center" },
   sos: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: colors.sos,
     experimental_backgroundImage: gradients.sos,
     alignItems: "center",
     justifyContent: "center",
     boxShadow: shadows.sos,
+    borderWidth: 3,
+    borderColor: colors.white,
   },
-  sosText: { color: colors.white, fontFamily: fonts.sansExtra, fontSize: 12, letterSpacing: 1, marginTop: -1 },
+  sosText: { color: colors.white, fontFamily: fonts.sansBold, fontSize: 12.5, letterSpacing: 0.6 },
 });

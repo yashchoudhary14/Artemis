@@ -78,13 +78,15 @@ function buildWiderMessage(name: string, session: SessionRow, now: number): stri
   return `SafeWalk alert: ${name} may need help (${formatTime(now)}). Her ${where}.`;
 }
 
-async function sendToContacts(session: SessionRow, inner: string, wider: string | null) {
+async function sendToContacts(session: SessionRow, inner: string, wider: string | null, kind = "alert") {
   const contacts = getAll<ContactRow>("SELECT * FROM contacts WHERE user_id = ? ORDER BY position", session.user_id);
   if (contacts.length === 0) log.warn(`no contacts for user ${session.user_id}; alert only logged`, { inner });
   await Promise.all(
     contacts
       .filter((c) => c.tier === "inner" || wider)
-      .map((c) => notify({ name: c.name, telegramChatId: c.telegram_chat_id }, c.tier === "inner" ? inner : wider!)),
+      .map((c) =>
+        notify({ name: c.name, telegramChatId: c.telegram_chat_id }, c.tier === "inner" ? inner : wider!, { sessionId: session.id, kind }),
+      ),
   );
 }
 
@@ -116,5 +118,5 @@ export async function fireAlert(session: SessionRow, type: AlertType): Promise<v
 export async function sendContactRestored(session: SessionRow): Promise<void> {
   const name = userName(session.user_id);
   const text = `SafeWalk update: ${name}'s phone is sending updates again (${formatTime(Date.now())}). ${whereAndBattery(session, lastLocation(session.id))} Live link: ${guardianUrl(session)}`;
-  await sendToContacts(session, text, null);
+  await sendToContacts(session, text, null, "update");
 }

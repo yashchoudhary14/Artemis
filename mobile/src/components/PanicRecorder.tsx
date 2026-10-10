@@ -1,5 +1,6 @@
-import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder } from "expo-audio";
+import { RecordingPresets, requestRecordingPermissionsAsync, useAudioRecorder } from "expo-audio";
 import { useEffect } from "react";
+import { panicAudioMode } from "@/lib/alarm";
 import { addChunk, panicStore } from "@/lib/panic";
 import { useStore } from "@/lib/store";
 
@@ -21,12 +22,7 @@ export function PanicRecorder() {
         panicStore.set((s) => ({ ...s, error: "Microphone permission is off, so audio can't be recorded." }));
         return;
       }
-      await setAudioModeAsync({
-        allowsRecording: true,
-        playsInSilentMode: true,
-        shouldPlayInBackground: true,
-        allowsBackgroundRecording: true,
-      } as Parameters<typeof setAudioModeAsync>[0]);
+      await panicAudioMode();
 
       while (!cancelled) {
         try {

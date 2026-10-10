@@ -93,13 +93,23 @@ export interface Place {
   source: "Google Maps";
 }
 
+export interface Delivery {
+  name: string;
+  /** alert | update | ai | escalation */
+  kind: string;
+  ok: boolean;
+  error: string | null;
+  at: number;
+}
+
 export interface SessionStatus {
   status: "active" | "ended";
   kind: string;
-  alerts: { type: string; at: number }[];
+  alerts: { type: string; at: number; message?: string }[];
   acks: { name: string; at: number }[];
   escalation: { step: number; level: number; done: boolean; doneReason: string | null; nextAt: number | null } | null;
   agent: { kind: string; text: string; recipients: string[]; at: number }[];
+  deliveries: Delivery[];
   audioChunks: number;
 }
 

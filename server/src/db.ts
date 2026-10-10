@@ -113,6 +113,17 @@ CREATE TABLE IF NOT EXISTS escalations (
 );
 
 -- Everything the AI agent did, for the guardian page timeline and the demo.
+-- Every message SafeWalk tried to send for a session, per contact, and whether it got through.
+CREATE TABLE IF NOT EXISTS deliveries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+  contact_name TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  ok INTEGER NOT NULL,
+  error TEXT,
+  at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS agent_events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,

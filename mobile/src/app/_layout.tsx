@@ -1,12 +1,14 @@
-// Per-weight imports so only the 8 font files we use are bundled.
-import { PlayfairDisplay_500Medium } from "@expo-google-fonts/playfair-display/500Medium";
-import { PlayfairDisplay_500Medium_Italic } from "@expo-google-fonts/playfair-display/500Medium_Italic";
-import { PlayfairDisplay_600SemiBold } from "@expo-google-fonts/playfair-display/600SemiBold";
-import { PlusJakartaSans_400Regular } from "@expo-google-fonts/plus-jakarta-sans/400Regular";
-import { PlusJakartaSans_500Medium } from "@expo-google-fonts/plus-jakarta-sans/500Medium";
-import { PlusJakartaSans_600SemiBold } from "@expo-google-fonts/plus-jakarta-sans/600SemiBold";
-import { PlusJakartaSans_700Bold } from "@expo-google-fonts/plus-jakarta-sans/700Bold";
-import { PlusJakartaSans_800ExtraBold } from "@expo-google-fonts/plus-jakarta-sans/800ExtraBold";
+// Per-weight imports so only the font files we use are bundled.
+import { Inter_400Regular } from "@expo-google-fonts/inter/400Regular";
+import { Inter_500Medium } from "@expo-google-fonts/inter/500Medium";
+import { Inter_600SemiBold } from "@expo-google-fonts/inter/600SemiBold";
+import { Inter_700Bold } from "@expo-google-fonts/inter/700Bold";
+import { Merriweather_400Regular } from "@expo-google-fonts/merriweather/400Regular";
+import { Merriweather_400Regular_Italic } from "@expo-google-fonts/merriweather/400Regular_Italic";
+import { Merriweather_600SemiBold } from "@expo-google-fonts/merriweather/600SemiBold";
+import { Merriweather_700Bold } from "@expo-google-fonts/merriweather/700Bold";
+import { PlayfairDisplay_700Bold } from "@expo-google-fonts/playfair-display/700Bold";
+import { PlayfairDisplay_900Black } from "@expo-google-fonts/playfair-display/900Black";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
@@ -26,14 +28,16 @@ import { colors, gradients } from "@/theme";
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    PlayfairDisplay_500Medium,
-    PlayfairDisplay_500Medium_Italic,
-    PlayfairDisplay_600SemiBold,
-    PlusJakartaSans_400Regular,
-    PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
-    PlusJakartaSans_700Bold,
-    PlusJakartaSans_800ExtraBold,
+    Merriweather_400Regular,
+    Merriweather_400Regular_Italic,
+    Merriweather_600SemiBold,
+    Merriweather_700Bold,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    PlayfairDisplay_700Bold,
+    PlayfairDisplay_900Black,
     ...Ionicons.font,
   });
 
@@ -74,7 +78,7 @@ export default function RootLayout() {
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: "fade_from_bottom" }} />
       ) : (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", experimental_backgroundImage: gradients.screen, backgroundColor: colors.bg }}>
-          <ActivityIndicator color={colors.violet} />
+          <ActivityIndicator color={colors.magenta} />
         </View>
       )}
     </SafeAreaProvider>

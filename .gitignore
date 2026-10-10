@@ -39,3 +39,6 @@ server/recordings/
 npm-debug.log*
 .DS_Store
 Thumbs.db
+
+# Generated siren used by the SOS alarm (not a recording)
+!mobile/assets/sounds/siren.wav

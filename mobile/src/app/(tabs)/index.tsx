@@ -1,19 +1,25 @@
 import { router } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Collage } from "@/components/art";
 import {
   Avatar,
-  Brand,
+  BrandHandle,
   Button,
-  Card,
+  Chip,
+  ChipRow,
   FadeIn,
-  Icon,
-  IconCircle,
+  FeatureCard,
+  Header,
+  HeaderIcon,
+  Hero,
+  InputPill,
   Pressy,
   Row,
   Screen,
-  SectionHeader,
+  SectionTitle,
+  StackedCards,
   StatusPill,
-  type IconName,
 } from "@/components/ui";
 import { meStore } from "@/lib/account";
 import { panicStore } from "@/lib/panic";
@@ -21,11 +27,13 @@ import { sessionStore } from "@/lib/session";
 import { useStore } from "@/lib/store";
 import { suspicionStore } from "@/lib/suspicion";
 import { insideZoneStore, zonesStore } from "@/lib/zones";
-import { colors, fonts, gradients, radius, shadows, space, type } from "@/theme";
+import { colors, fonts, space, type } from "@/theme";
 
-function greeting() {
+function question() {
   const h = new Date().getHours();
-  return h < 5 ? "Still up" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+  if (h >= 18 || h < 5) return "Ready to walk home safe tonight?";
+  if (h < 12) return "Where are you headed this morning?";
+  return "Where are you headed today?";
 }
 
 export default function Home() {
@@ -35,271 +43,145 @@ export default function Home() {
   const listening = useStore(suspicionStore).listening;
   const zone = useStore(insideZoneStore);
   const zones = useStore(zonesStore);
+  const [dest, setDest] = useState("");
   const circle = me?.contacts ?? [];
-  const first = me?.name.split(" ")[0];
+  const linked = circle.filter((c) => c.linked).length;
+  const handle = (me?.name ?? "safewalk").split(" ")[0].toLowerCase();
+
+  const go = () => {
+    router.push({ pathname: "/walk", params: dest.trim() ? { destination: dest.trim() } : {} });
+    setDest("");
+  };
 
   return (
-    <Screen>
+    <Screen
+      header={
+        <Header
+          left={<BrandHandle name={handle} onPress={() => router.push("/profile")} />}
+          right={
+            <>
+              <HeaderIcon icon="add" label="Start a walk" onPress={() => router.push("/walk")} />
+              <HeaderIcon icon="ellipsis-horizontal" label="Profile and settings" onPress={() => router.push("/profile")} />
+            </>
+          }
+        />
+      }
+    >
       <FadeIn>
-        <Brand right={me ? <Avatar name={me.name} index={1} size={40} ring onPress={() => router.push("/rise")} /> : null} />
+        <Hero
+          title={question()}
+          accent={panic.active ? "SOS is on" : active ? (zone.inside ? "Private zone · sharing paused" : "Your circle can see you") : "SafeWalk is with you"}
+          accentIcon={panic.active ? "radio" : "sync-outline"}
+        />
       </FadeIn>
 
       <FadeIn index={1}>
-        <View style={styles.heroWrap}>
-          <View style={{ flex: 1 }}>
-            <Text style={[type.bodyMedium, { color: colors.inkSoft, marginBottom: 6 }]}>
-              {greeting()}
-              {first ? `, ${first}` : ""}
-            </Text>
-            <Text style={type.display}>
-              Move on{"\n"}
-              <Text style={{ fontFamily: fonts.displayItalic, color: colors.violet }}>your terms.</Text>
-            </Text>
-            <Text style={[type.body, { color: colors.inkSoft, marginTop: 8 }]}>Different paths. A safer tomorrow.</Text>
-          </View>
-          <View style={styles.moonOrb} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-            <View style={styles.moonGlow} />
-            <View style={styles.moonRing} />
-            <Icon name="moon" size={46} color={colors.violet} />
-            <Icon name="sparkles" size={14} color={colors.rose} style={styles.sparkle} />
-          </View>
-        </View>
+        <ChipRow>
+          <Chip icon="footsteps-outline" label="Start a walk" onPress={() => router.push("/walk")} />
+          <Chip icon="mic-outline" label="I feel uneasy" onPress={() => router.push("/uneasy")} />
+          <Chip icon="location-outline" label="Private zones" onPress={() => router.push("/zones")} />
+          <Chip icon="people-outline" label="Walk together" onPress={() => router.push("/buddy")} />
+          <Chip icon="medkit-outline" label="Help nearby" onPress={() => router.push("/help")} />
+        </ChipRow>
       </FadeIn>
 
-      {/* Live status */}
+      {/* Status — stacked like "Saved Insights" */}
       <FadeIn index={2}>
-        {panic.active ? (
-          <Card tone="sos" onPress={() => router.push("/sos")}>
-            <Row style={{ gap: space.sm }}>
-              <IconCircle icon="radio" tint="rgba(255,255,255,0.2)" color={colors.white} />
-              <View style={{ flex: 1 }}>
-                <Text style={[type.h3, { color: colors.white }]}>SOS is on</Text>
-                <Text style={[type.small, { color: "rgba(255,255,255,0.85)" }]}>
-                  {panic.alertSent ? "Your circle has been alerted · recording audio" : "Sending your alert…"}
-                </Text>
-              </View>
-              <Icon name="chevron-forward" size={18} color={colors.white} />
-            </Row>
-          </Card>
-        ) : (
-          <Card onPress={() => router.push(active ? (active.kind === "suspicion" ? "/uneasy" : "/walk") : "/zones")}>
-            <Row style={{ gap: space.sm }}>
-              <IconCircle
-                icon={zone.inside ? "location" : active ? "navigate" : "shield-checkmark"}
-                tint={zone.inside || !active ? colors.safeWash : colors.violetWash}
-                color={zone.inside || !active ? colors.safe : colors.violet}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={type.h3}>
-                  {zone.inside
-                    ? `${zone.zoneName ?? "Private zone"}`
-                    : active
-                      ? active.kind === "suspicion"
-                        ? "Staying with you"
-                        : `Walking${active.destination ? ` to ${active.destination}` : ""}`
-                      : "All quiet"}
-                </Text>
-                <Text style={type.small}>
-                  {zone.inside
-                    ? "Location sharing paused here"
-                    : active
-                      ? listening
-                        ? "Your circle can see you · listening"
-                        : "Your circle can see your live location"
-                      : zones.length
-                        ? `${zones.length} private zone${zones.length > 1 ? "s" : ""} set · ready when you are`
-                        : "SafeWalk is ready when you are"}
-                </Text>
-              </View>
-              {active || zone.inside ? <StatusPill text={zone.inside ? "Paused" : "Live"} tone={zone.inside ? "safe" : "violet"} pulse={!zone.inside} /> : <Icon name="chevron-forward" size={18} color={colors.inkFaint} />}
-            </Row>
-          </Card>
-        )}
-      </FadeIn>
-
-      {/* Primary actions */}
-      <FadeIn index={3}>
-        <ActionRow
-          tone="violet"
-          icon="walk"
-          title={active?.kind === "walk" ? "Open your walk" : "Start a walk"}
-          subtitle="Set a check-in timer"
-          onPress={() => router.push("/walk")}
-        />
-        <ActionRow tone="glass" icon="shield-half" title="I feel uneasy" subtitle={listening ? "Listening for your words" : "Stay with me for 30 min"} onPress={() => router.push("/uneasy")} />
-      </FadeIn>
-
-      {/* Circle */}
-      <FadeIn index={4}>
-        <SectionHeader title="Your circle" action="Edit" onAction={() => router.push("/rise")} />
-        <Card>
-          <Text style={[type.small, { marginBottom: space.md }]}>People you trust, always close.</Text>
-          <Row style={{ gap: space.lg, flexWrap: "wrap", alignItems: "flex-start" }}>
-            {circle.slice(0, 4).map((c, i) => (
-              <View key={c.id} style={styles.member}>
-                <View>
-                  <Avatar name={c.name} index={i} size={56} />
-                  <View style={[styles.badge, { backgroundColor: c.linked ? colors.safe : colors.inkFaint }]}>
-                    <Icon name={c.linked ? "checkmark" : "time"} size={10} color={colors.white} />
-                  </View>
-                </View>
-                <Text style={styles.memberName} numberOfLines={1}>
-                  {c.name}
-                </Text>
-              </View>
-            ))}
-            <Pressy onPress={() => router.push("/rise")} accessibilityLabel="Add someone to your circle">
-              <View style={styles.member}>
-                <View style={styles.addCircle}>
-                  <Icon name="add" size={24} color={colors.violet} />
-                </View>
-                <Text style={styles.memberName}>Add</Text>
-              </View>
+        <StackedCards
+          behind={[
+            { title: `Your circle · ${linked}/${circle.length} linked`, icon: "people-outline" },
+            { title: `Private zones · ${zones.length} saved`, icon: "location-outline" },
+          ]}
+        >
+          {panic.active ? (
+            <Pressy onPress={() => router.push("/sos")} accessibilityLabel="Open SOS">
+              <Row style={{ justifyContent: "space-between", marginBottom: space.xs }}>
+                <StatusPill text="SOS active" tone="sos" pulse />
+                <Text style={type.small}>{panic.alertSent ? "Circle alerted" : "Sending…"}</Text>
+              </Row>
+              <Text style={type.title}>Help is on the way to your circle.</Text>
+              <Text style={[type.bodySoft, { marginTop: 6 }]}>Recording audio and sharing your location every 5 seconds. Tap to see who got the message.</Text>
             </Pressy>
-          </Row>
-        </Card>
+          ) : active ? (
+            <Pressy onPress={() => router.push(active.kind === "suspicion" ? "/uneasy" : "/walk")} accessibilityLabel="Open your session">
+              <Row style={{ justifyContent: "space-between", marginBottom: space.xs }}>
+                <StatusPill text={zone.inside ? "Sharing paused" : "Live"} tone={zone.inside ? "safe" : "magenta"} pulse={!zone.inside} />
+                <Text style={type.small}>{listening ? "Listening for your words" : "15 s updates"}</Text>
+              </Row>
+              <Text style={type.title}>{active.kind === "suspicion" ? "Staying with you." : `Walking${active.destination ? ` to ${active.destination}` : ""}.`}</Text>
+              <Text style={[type.bodySoft, { marginTop: 6 }]}>
+                {zone.inside ? `You're inside ${zone.zoneName ?? "a private zone"}, so nothing is shared here.` : "Your circle can follow your live location until you end it with your PIN."}
+              </Text>
+            </Pressy>
+          ) : (
+            <>
+              <Row style={{ gap: space.xs, marginBottom: space.xs }}>
+                <Avatar name={me?.name ?? "S"} size={30} index={1} />
+                <View>
+                  <Text style={[type.cardTitle, { fontSize: 14 }]}>Tonight's check-in</Text>
+                  <Text style={[type.small, { fontSize: 11.5 }]}>Nothing running</Text>
+                </View>
+              </Row>
+              <Text style={[type.title, { fontSize: 20, lineHeight: 28 }]}>Every walk is better when someone's watching out.</Text>
+              <Text style={[type.bodySoft, { marginTop: 6 }]}>Start a walk and your circle can follow you live. Miss your check-in and they hear from SafeWalk.</Text>
+              <Button label="Start a walk" iconRight="arrow-forward" size="sm" onPress={() => router.push("/walk")} style={{ alignSelf: "flex-start", marginTop: space.md }} />
+            </>
+          )}
+        </StackedCards>
       </FadeIn>
 
-      {/* Buddy — night scene */}
-      <FadeIn index={5}>
-        <Pressy onPress={() => router.push("/buddy")} accessibilityLabel="Find a walking buddy">
-          <View style={styles.dusk}>
-            <NightScene />
-            <Text style={styles.duskTitle}>A little{"\n"}company?</Text>
-            <Text style={styles.duskBody}>Plan a walk with people you trust, or join others heading the same way.</Text>
-            <Button label="Find a walking buddy" iconRight="arrow-forward" variant="light" size="sm" onPress={() => router.push("/buddy")} style={{ alignSelf: "flex-start", marginTop: space.lg }} />
-          </View>
-        </Pressy>
-      </FadeIn>
-
-      {/* Bento */}
-      <FadeIn index={6}>
-        <Row style={{ gap: space.sm, alignItems: "stretch" }}>
-          <Tile icon="locate" tone="violetSoft" title="Private zones" sub={zones.length ? `${zones.length} saved` : "Set your safe areas"} onPress={() => router.push("/zones")} />
-          <Tile icon="medkit" tone="rose" title="Help nearby" sub="Hospitals · police · 108" onPress={() => router.push("/help")} />
-        </Row>
-        <Card onPress={() => router.push("/help")} style={{ marginTop: space.xs }}>
-          <Row style={{ gap: space.sm }}>
-            <IconCircle icon="book" tint={colors.peach} color={colors.amber} />
-            <View style={{ flex: 1 }}>
-              <Text style={type.h3}>Help, when you need it</Text>
-              <Text style={type.small}>Verified helplines for your state</Text>
+      <FadeIn index={3}>
+        <SectionTitle title="Your circle" icon="options-outline" onIcon={() => router.push("/profile")} />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.md, paddingRight: space.lg }} style={{ marginHorizontal: -space.lg, paddingLeft: space.lg }}>
+          {circle.map((c, i) => (
+            <View key={c.id} style={styles.member}>
+              <Avatar name={c.name} index={i} size={58} square />
+              <Text style={styles.memberName} numberOfLines={1}>
+                {c.name}
+              </Text>
+              <Text style={[type.small, { fontSize: 11, color: c.linked ? colors.safe : colors.inkFaint }]}>{c.linked ? "linked" : "not linked"}</Text>
             </View>
-            <Icon name="chevron-forward" size={18} color={colors.inkFaint} />
-          </Row>
-        </Card>
+          ))}
+          <Pressy onPress={() => router.push("/profile")} accessibilityLabel="Add someone to your circle">
+            <View style={styles.member}>
+              <View style={styles.add}>
+                <Text style={{ fontSize: 26, color: colors.inkSoft, fontFamily: fonts.sans }}>+</Text>
+              </View>
+              <Text style={styles.memberName}>Add</Text>
+            </View>
+          </Pressy>
+        </ScrollView>
+      </FadeIn>
+
+      <FadeIn index={4}>
+        <SectionTitle title="Made for your walk home" icon="funnel-outline" />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm, paddingRight: space.lg }} style={{ marginHorizontal: -space.lg, paddingLeft: space.lg, marginBottom: space.lg }}>
+          <FeatureCard art={<Collage icon="mic" tones={["#FAD3E0", "#F3A9C4"]} />} title="Feeling uneasy?" text="Say “bachao” and your circle is alerted at once, with audio." onPress={() => router.push("/uneasy")} />
+          <FeatureCard art={<Collage icon="people" tones={["#E6DDFB", "#C3B0F0"]} accent={colors.lilac} />} title="Walk together" text="Match with verified students going your way, ±15 minutes." onPress={() => router.push("/buddy")} />
+          <FeatureCard art={<Collage icon="location" tones={["#FFE3D3", "#F6BFA0"]} accent="#C25E2E" />} title="Private zones" text="Home and hostel stay private. Checked only on your phone." onPress={() => router.push("/zones")} />
+          <FeatureCard art={<Collage icon="sparkles" tones={["#FCE7B2", "#F5C451"]} accent="#9A6A00" />} title="Women who rise" text="Stories of women in powerful roles, to walk taller." onPress={() => router.push("/rise")} />
+        </ScrollView>
+      </FadeIn>
+
+      <FadeIn index={5}>
+        <InputPill value={dest} onChangeText={setDest} placeholder="Where are you going?" onPlus={() => router.push("/walk")} onSubmit={go} icon="arrow-forward-circle" />
       </FadeIn>
     </Screen>
   );
 }
 
-function ActionRow({ tone, icon, title, subtitle, onPress }: { tone: "violet" | "glass"; icon: IconName; title: string; subtitle: string; onPress: () => void }) {
-  const dark = tone === "violet";
-  return (
-    <Card tone={tone} onPress={onPress} style={{ paddingVertical: space.md }}>
-      <Row style={{ gap: space.md }}>
-        <IconCircle icon={icon} tint={dark ? "rgba(255,255,255,0.18)" : colors.roseWash} color={dark ? colors.white : colors.rose} size={46} />
-        <View style={{ flex: 1 }}>
-          <Text style={[type.h3, { fontSize: 17 }, dark && { color: colors.white }]}>{title}</Text>
-          <Text style={[type.small, dark && { color: "rgba(255,255,255,0.8)" }]}>{subtitle}</Text>
-        </View>
-        <View style={[styles.chev, dark && { backgroundColor: "rgba(255,255,255,0.18)" }]}>
-          <Icon name="chevron-forward" size={16} color={dark ? colors.white : colors.ink} />
-        </View>
-      </Row>
-    </Card>
-  );
-}
-
-function Tile({ icon, tone, title, sub, onPress }: { icon: IconName; tone: "violetSoft" | "rose"; title: string; sub: string; onPress: () => void }) {
-  return (
-    <View style={{ flex: 1 }}>
-      <Card tone={tone} onPress={onPress} style={{ minHeight: 140, justifyContent: "space-between" }}>
-        <View style={styles.tileIcon}>
-          <Icon name={icon} size={20} color={tone === "rose" ? colors.rose : colors.violet} />
-        </View>
-        <View>
-          <Text style={[type.h2, { fontSize: 18 }]}>{title}</Text>
-          <Text style={type.small}>{sub}</Text>
-        </View>
-      </Card>
-    </View>
-  );
-}
-
-// Decorative dusk sky: moon glow, stars and a soft campus skyline (no image assets needed).
-function NightScene() {
-  const stars = [
-    [0.62, 0.12, 3],
-    [0.78, 0.22, 2],
-    [0.9, 0.1, 3],
-    [0.7, 0.36, 2],
-    [0.55, 0.28, 2],
-    [0.95, 0.42, 2],
-  ];
-  const skyline = [26, 44, 34, 58, 30, 48, 70, 38, 52, 32, 46];
-  return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <View style={styles.duskMoonGlow} />
-      <View style={styles.duskMoon} />
-      {stars.map(([x, y, s], i) => (
-        <View key={i} style={{ position: "absolute", left: `${x * 100}%`, top: `${y * 100}%`, width: s, height: s, borderRadius: s, backgroundColor: "rgba(255,255,255,0.85)" }} />
-      ))}
-      <View style={styles.skyline}>
-        {skyline.map((h, i) => (
-          <View key={i} style={{ flex: 1, height: h, marginHorizontal: 1, borderTopLeftRadius: 3, borderTopRightRadius: 3, backgroundColor: i % 3 === 0 ? "rgba(26,14,39,0.55)" : "rgba(26,14,39,0.4)" }} />
-        ))}
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  heroWrap: { flexDirection: "row", alignItems: "flex-start", marginBottom: space.xl },
-  moonOrb: { width: 108, height: 108, alignItems: "center", justifyContent: "center", marginTop: 18 },
-  moonGlow: { position: "absolute", width: 120, height: 120, borderRadius: 60, experimental_backgroundImage: gradients.violetGlow },
-  moonRing: { position: "absolute", width: 92, height: 92, borderRadius: 46, borderWidth: 1, borderColor: "rgba(116,66,216,0.25)" },
-  sparkle: { position: "absolute", top: 10, right: 14 },
-  member: { alignItems: "center", width: 64 },
-  memberName: { fontFamily: fonts.sansSemi, fontSize: 12, color: colors.ink, marginTop: 6 },
-  badge: {
-    position: "absolute",
-    right: -1,
-    bottom: -1,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: colors.white,
-  },
-  addCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  member: { alignItems: "center", width: 66 },
+  memberName: { fontFamily: fonts.serif, fontSize: 12.5, color: colors.ink, marginTop: 6 },
+  add: {
+    width: 58,
+    height: 58,
+    borderRadius: 13,
     borderWidth: 1.5,
     borderStyle: "dashed",
-    borderColor: colors.violetSoft,
+    borderColor: "rgba(26,23,28,0.2)",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.6)",
+    backgroundColor: "rgba(255,255,255,0.5)",
   },
-  chev: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.violetWash, alignItems: "center", justifyContent: "center" },
-  dusk: {
-    borderRadius: radius.xl,
-    padding: space.xl,
-    paddingBottom: space.xxl + 8,
-    marginBottom: space.md,
-    overflow: "hidden",
-    backgroundColor: colors.plum,
-    experimental_backgroundImage: gradients.dusk,
-    boxShadow: shadows.dark,
-  },
-  duskMoonGlow: { position: "absolute", right: -30, top: -30, width: 190, height: 190, borderRadius: 95, experimental_backgroundImage: "radial-gradient(circle at 50% 50%, rgba(255,214,226,0.45) 0%, rgba(255,214,226,0) 65%)" },
-  duskMoon: { position: "absolute", right: 34, top: 30, width: 42, height: 42, borderRadius: 21, backgroundColor: "#FFE9F0", boxShadow: "0px 0px 24px rgba(255,220,232,0.9)" },
-  skyline: { position: "absolute", left: 0, right: 0, bottom: 0, flexDirection: "row", alignItems: "flex-end", height: 72, paddingHorizontal: 6 },
-  duskTitle: { fontFamily: fonts.display, fontSize: 30, lineHeight: 34, color: colors.white, letterSpacing: -0.3 },
-  duskBody: { fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, color: "rgba(255,255,255,0.82)", marginTop: space.xs, maxWidth: "78%" },
-  tileIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.75)", alignItems: "center", justifyContent: "center", marginBottom: space.md },
 });
