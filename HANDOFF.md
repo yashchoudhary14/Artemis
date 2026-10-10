@@ -102,7 +102,7 @@ Use these to build `data/helplines.json`. Fields: number, purpose, coverage, sou
 
 ## Last commit
 
-- Hash:
-- Message:
-- Pushed by / from which laptop:
-- Credits key in use:
+- Hash: `2f99448` (plus this HANDOFF-only commit on top; run `git log -1` for the exact latest)
+- Message: README fresh-laptop setup; server /health verified through cloudflared tunnel; HANDOFF updated
+- Pushed by / from which laptop: Yash's laptop (Windows)
+- Credits key in use: not recorded
