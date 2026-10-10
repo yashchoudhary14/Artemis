@@ -25,7 +25,7 @@ import { meStore } from "@/lib/account";
 import { panicStore } from "@/lib/panic";
 import { saveActive, sessionStore } from "@/lib/session";
 import { useStore } from "@/lib/store";
-import { saveSuspicionSettings, startListening, stopListening, suspicionStore, type Lang } from "@/lib/suspicion";
+import { saveSuspicionSettings, speechAvailable, startListening, stopListening, suspicionStore, type Lang } from "@/lib/suspicion";
 import { colors, fonts, gradients, shadows, space, type } from "@/theme";
 
 // F2: "I feel uneasy" — 15 s heartbeats + on-device keyword listening, auto-off after 30 min.
@@ -206,6 +206,9 @@ export default function Uneasy() {
                   { value: "en-IN", label: "English (India)" },
                 ]}
               />
+              {!speechAvailable() ? (
+                <Banner tone="amber" text="Keyword listening isn't available in this app (e.g. Expo Go). Your circle can still follow you live, and SOS works." />
+              ) : null}
               {error || s.error ? <Banner text={(error ?? s.error)!} tone="sos" /> : null}
               <Button label={`Stay with me · ${SUSPICION_MINUTES} min`} icon="mic" variant="violet" size="lg" loading={busy} onPress={start} />
             </Card>

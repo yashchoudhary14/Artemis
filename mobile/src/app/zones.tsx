@@ -1,7 +1,7 @@
 import Slider from "@react-native-community/slider";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import MapView, { Circle, Marker, PROVIDER_GOOGLE, type MapPressEvent } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Banner, Button, Field, Icon, IconButton, Row } from "@/components/ui";
@@ -67,7 +67,8 @@ export default function Zones() {
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <MapView
         ref={map}
-        provider={PROVIDER_GOOGLE}
+        // Google (styled) on Android; Apple Maps on iOS, where Expo Go has no Google Maps SDK.
+        provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
         style={StyleSheet.absoluteFill}
         initialRegion={{ ...DEFAULT, latitudeDelta: 0.02, longitudeDelta: 0.02 }}
         customMapStyle={MAP_STYLE}

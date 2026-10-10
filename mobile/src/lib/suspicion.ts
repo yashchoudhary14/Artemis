@@ -1,4 +1,4 @@
-import { ExpoSpeechRecognitionModule } from "expo-speech-recognition";
+import type { ExpoSpeechRecognitionModule as SpeechModule } from "expo-speech-recognition";
 import { startPanic } from "./panic";
 import { loadJson, saveJson } from "./storage";
 import { createStore } from "./store";
@@ -6,6 +6,18 @@ import { insideZoneStore } from "./zones";
 
 // "I feel uneasy" mode: on-device keyword listening. Runs only BEFORE a trigger; on a keyword
 // it stops completely so the audio recorder can take the microphone (no mic conflict).
+
+// The speech module only exists in the SafeWalk dev/preview build. In Expo Go (e.g. on an
+// iPhone) importing it throws at startup, so load it lazily and degrade gracefully.
+let Speech: typeof SpeechModule | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  Speech = (require("expo-speech-recognition") as { ExpoSpeechRecognitionModule: typeof SpeechModule }).ExpoSpeechRecognitionModule;
+} catch {
+  Speech = null;
+}
+export const speechAvailable = () => Speech != null;
+const NO_SPEECH = "Keyword listening needs the SafeWalk app build (it isn't available in Expo Go). Location sharing still works.";
 
 export type Lang = "hi-IN" | "en-IN";
 
@@ -67,9 +79,10 @@ function remember(text: string) {
 }
 
 function addListeners() {
-  if (listenersAdded) return;
+  if (listenersAdded || !Speech) return;
   listenersAdded = true;
-  ExpoSpeechRecognitionModule.addListener("result", (e) => {
+  const S = Speech;
+  S.addListener("result", (e) => {
     const texts = e.results.map((r) => r.transcript).filter(Boolean);
     const best = texts[0] ?? "";
     suspicionStore.set((s) => ({ ...s, lastHeard: best }));
@@ -83,8 +96,8 @@ function addListeners() {
     }
     if (e.isFinal) remember(best);
   });
-  ExpoSpeechRecognitionModule.addListener("end", () => scheduleRestart(250));
-  ExpoSpeechRecognitionModule.addListener("error", (e) => {
+  S.addListener("end", () => scheduleRestart(250));
+  S.addListener("error", (e) => {
     if (e.error === "not-allowed") {
       wanted = false;
       suspicionStore.set((s) => ({ ...s, listening: false, error: "Microphone or speech permission was refused." }));
@@ -97,7 +110,7 @@ function addListeners() {
     if (!wanted) return;
     const inside = insideZoneStore.get().inside;
     suspicionStore.set((s) => ({ ...s, paused: inside ? "safe-zone" : null }));
-    if (inside) ExpoSpeechRecognitionModule.abort();
+    if (inside) S.abort();
     else scheduleRestart(100);
   });
 }
@@ -111,8 +124,9 @@ function scheduleRestart(ms: number) {
 }
 
 function begin() {
+  if (!Speech) return;
   try {
-    ExpoSpeechRecognitionModule.start({
+    Speech.start({
       lang: suspicionStore.get().lang,
       interimResults: true,
       continuous: true,
@@ -130,7 +144,11 @@ function begin() {
 }
 
 export async function startListening(): Promise<boolean> {
-  const perm = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+  if (!Speech) {
+    suspicionStore.set((s) => ({ ...s, listening: false, error: NO_SPEECH }));
+    return false;
+  }
+  const perm = await Speech.requestPermissionsAsync();
   if (!perm.granted) {
     suspicionStore.set((s) => ({ ...s, error: "Microphone and speech permission are needed for keyword listening." }));
     return false;
@@ -149,7 +167,7 @@ export function stopListening() {
   if (restartTimer) clearTimeout(restartTimer);
   restartTimer = null;
   try {
-    ExpoSpeechRecognitionModule.abort();
+    Speech?.abort();
   } catch {
     // not running
   }
