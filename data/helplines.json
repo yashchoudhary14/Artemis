@@ -1,0 +1,13 @@
+{
+  "_note": "Only numbers verified by the team from official sources. Entries without a sourceUrl are hidden by the app. Do not add numbers without an official source.",
+  "helplines": [
+    { "number": "112", "purpose": "Single emergency number: police, fire, ambulance", "coverage": "National", "sourceUrl": "https://www.india.gov.in/directory/helpline", "dateVerified": "2026-10-10" },
+    { "number": "100", "purpose": "Police", "coverage": "National", "sourceUrl": "https://www.india.gov.in/directory/helpline", "dateVerified": "2026-10-10" },
+    { "number": "102", "purpose": "Ambulance", "coverage": "National", "sourceUrl": "https://www.india.gov.in/directory/helpline", "dateVerified": "2026-10-10" },
+    { "number": "101", "purpose": "Fire", "coverage": "National", "sourceUrl": "https://www.india.gov.in/directory/helpline", "dateVerified": "2026-10-10" },
+    { "number": "139", "purpose": "Railway security and medical help on trains", "coverage": "National", "sourceUrl": "https://www.india.gov.in/directory/helpline", "dateVerified": "2026-10-10" },
+    { "number": "14490", "purpose": "National Commission for Women helpline, 24/7", "coverage": "National", "sourceUrl": "https://www.digitalindia.gov.in/initiative/ncw-womens-helpline/", "dateVerified": "2026-10-10" },
+    { "number": "108", "purpose": "Ambulance (Mrityunjoy 108)", "coverage": "Assam", "sourceUrl": "https://nhm.assam.gov.in/schemes/mrityunjoy-%E2%80%93-108", "dateVerified": "2026-10-10", "ambulance": true },
+    { "number": "181", "purpose": "Sakhi women helpline", "coverage": "Assam", "sourceUrl": "https://assam.mygov.in/en/talk/181-sakhi-women-helpline-number-launched/", "dateVerified": "2026-10-10" }
+  ]
+}

@@ -1,0 +1,41 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+google-services.json
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+mobile/android/
+mobile/ios/
+mobile/.expo/
+.expo/
+*.apk
+*.aab
+
+# Server runtime data (never commit)
+server/data/
+server/recordings/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+
+# Audio
+*.m4a
+*.wav
+*.mp3
+*.aac
+
+# Logs / OS
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
